@@ -60,10 +60,16 @@ export default function CodeGenerator() {
     
     if (!isValid) return;
     
-    // Update code
-    const updatedCode = originalCode
-      .replace(currentFileId, fileId)
-      .replace(currentApiKey, apiKey);
+    // Update code by replacing the values between quotes
+    let updatedCode = originalCode;
+    
+    // Create regex patterns that match the exact values including their surrounding quotes
+    const fileIdPattern = new RegExp(`file: '${currentFileId}'`, 'g');
+    const apiKeyPattern = new RegExp(`key: '${currentApiKey}'`, 'g');
+    
+    // Replace with new values
+    updatedCode = updatedCode.replace(fileIdPattern, `file: '${fileId}'`);
+    updatedCode = updatedCode.replace(apiKeyPattern, `key: '${apiKey}'`);
     
     setCurrentCode(updatedCode);
     setCurrentFileId(fileId);
