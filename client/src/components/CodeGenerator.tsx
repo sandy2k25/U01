@@ -35,6 +35,34 @@ export default function CodeGenerator() {
   const [isCopied, setIsCopied] = useState(false);
   const codeSectionRef = useRef<HTMLDivElement>(null);
   
+  // Handle input change events (needed for integration with MediaInfoSearch)
+  useEffect(() => {
+    const fileIdInput = document.getElementById("fileId") as HTMLInputElement;
+    const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
+    
+    if (fileIdInput && apiKeyInput) {
+      // Listen for input events on fileId input
+      const handleFileIdInput = (e: Event) => {
+        const value = (e.target as HTMLInputElement).value;
+        setFileId(value);
+      };
+      
+      // Listen for input events on apiKey input
+      const handleApiKeyInput = (e: Event) => {
+        const value = (e.target as HTMLInputElement).value;
+        setApiKey(value);
+      };
+      
+      fileIdInput.addEventListener('input', handleFileIdInput);
+      apiKeyInput.addEventListener('input', handleApiKeyInput);
+      
+      return () => {
+        fileIdInput.removeEventListener('input', handleFileIdInput);
+        apiKeyInput.removeEventListener('input', handleApiKeyInput);
+      };
+    }
+  }, []);
+  
   const { toast } = useToast();
 
   // Update code with new credentials
