@@ -60,16 +60,20 @@ export default function CodeGenerator() {
     
     if (!isValid) return;
     
-    // Update code by replacing the values between quotes
-    let updatedCode = originalCode;
+    // Update code with new values - using a simpler, more reliable approach
+    let codeLines = originalCode.split('\n');
+
+    // Find and replace the file line
+    for (let i = 0; i < codeLines.length; i++) {
+      if (codeLines[i].includes("file:")) {
+        codeLines[i] = codeLines[i].replace(/file:.*?,/, `file: '${fileId}',`);
+      }
+      if (codeLines[i].includes("key:")) {
+        codeLines[i] = codeLines[i].replace(/key:.*?[}]/, `key: '${apiKey}'}`);
+      }
+    }
     
-    // Create regex patterns that match the exact values including their surrounding quotes
-    const fileIdPattern = new RegExp(`file: '${currentFileId}'`, 'g');
-    const apiKeyPattern = new RegExp(`key: '${currentApiKey}'`, 'g');
-    
-    // Replace with new values
-    updatedCode = updatedCode.replace(fileIdPattern, `file: '${fileId}'`);
-    updatedCode = updatedCode.replace(apiKeyPattern, `key: '${apiKey}'`);
+    const updatedCode = codeLines.join('\n');
     
     setCurrentCode(updatedCode);
     setCurrentFileId(fileId);
