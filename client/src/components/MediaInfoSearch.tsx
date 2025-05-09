@@ -4,10 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Loader2, Info, ArrowRight, Check, RefreshCw, Film } from "lucide-react";
+import { Search, Loader2, Info, ArrowRight, Check, RefreshCw } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PlaylistItem {
   title: string;
@@ -244,19 +243,13 @@ export default function MediaInfoSearch() {
           <h2 className="text-xl font-semibold">Media Information Search</h2>
         </div>
         
-        <Tabs defaultValue="imdb" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="imdb" className="flex items-center">
-              <Search className="h-4 w-4 mr-2" />
+        <div className="space-y-8">
+          {/* IMDB ID Search */}
+          <div>
+            <h3 className="text-lg font-medium mb-2 flex items-center">
+              <Search className="h-4 w-4 mr-2" /> 
               Search by IMDB ID
-            </TabsTrigger>
-            <TabsTrigger value="tmdb" className="flex items-center">
-              <Film className="h-4 w-4 mr-2" />
-              Search by TMDB ID
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="imdb" className="mt-0">
+            </h3>
             <form id="mediaIdForm" onSubmit={handleSearch} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="mediaId" className="font-medium text-gray-700">IMDB ID</Label>
@@ -286,9 +279,15 @@ export default function MediaInfoSearch() {
                 )}
               </div>
             </form>
-          </TabsContent>
+          </div>
           
-          <TabsContent value="tmdb" className="mt-0">
+          {/* TMDB ID Search */}
+          <div>
+            <Separator className="my-4" />
+            <h3 className="text-lg font-medium mb-2 flex items-center">
+              <RefreshCw className="h-4 w-4 mr-2" /> 
+              Search by TMDB ID
+            </h3>
             <form onSubmit={handleTmdbSearch} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="tmdbId" className="font-medium text-gray-700">TMDB ID</Label>
@@ -310,7 +309,7 @@ export default function MediaInfoSearch() {
                     ) : (
                       <RefreshCw className="h-4 w-4 mr-2" />
                     )}
-                    Convert
+                    Convert & Search
                   </Button>
                 </div>
                 {tmdbError && (
@@ -326,8 +325,8 @@ export default function MediaInfoSearch() {
                 )}
               </div>
             </form>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
         
         {/* Results Section */}
         {allLanguages.length > 0 && apiKey && (
