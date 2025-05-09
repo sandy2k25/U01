@@ -7,7 +7,23 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, Loader2, Info, ArrowRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
-interface MediaInfo {
+interface PlaylistItem {
+  title: string;
+  id: string;
+  translator: string;
+  targets: string;
+  file: string;
+}
+
+interface MediaInfoResponse {
+  success: boolean;
+  data: {
+    playlist: Array<PlaylistItem | any>;
+    key: string;
+  };
+}
+
+interface MediaInfoData {
   title: string;
   file: string;
   key: string;
@@ -15,7 +31,8 @@ interface MediaInfo {
 
 export default function MediaInfoSearch() {
   const [mediaId, setMediaId] = useState("");
-  const [mediaInfo, setMediaInfo] = useState<MediaInfo | null>(null);
+  const [mediaInfo, setMediaInfo] = useState<MediaInfoData | null>(null);
+  const [allLanguages, setAllLanguages] = useState<PlaylistItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { toast } = useToast();
@@ -39,31 +56,66 @@ export default function MediaInfoSearch() {
         throw new Error(`Error: ${response.status}`);
       }
       
-      const data = await response.json();
-      setMediaInfo(data);
+      // Parse response data
+      const responseData: MediaInfoResponse = await response.json();
       
-      // Transfer data to code generator fields
-      const fileIdInput = document.getElementById("fileId") as HTMLInputElement;
-      const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
+      if (!responseData.success) {
+        throw new Error("API returned unsuccessful response");
+      }
       
-      if (fileIdInput && apiKeyInput && data.file && data.key) {
-        fileIdInput.value = data.file;
-        apiKeyInput.value = data.key;
+      // Extract playlist items and key
+      const playlist = responseData.data.playlist;
+      const key = responseData.data.key;
+      
+      // Get valid playlist items (skip first empty array item if present)
+      const languages: PlaylistItem[] = [];
+      for (const item of playlist) {
+        // Debug the structure
+        console.log("Playlist item:", item);
+        if (item && typeof item === 'object' && item.title && item.file) {
+          languages.push(item as PlaylistItem);
+        }
+      }
+      
+      setAllLanguages(languages);
+      
+      // Use first language option by default
+      if (languages.length > 0) {
+        const firstLanguage = languages[0];
+        const mediaData: MediaInfoData = {
+          title: firstLanguage.title,
+          file: firstLanguage.file,
+          key: key
+        };
         
-        // Trigger change events
-        const event = new Event('input', { bubbles: true });
-        fileIdInput.dispatchEvent(event);
-        apiKeyInput.dispatchEvent(event);
+        setMediaInfo(mediaData);
         
-        toast({
-          title: "Information transferred",
-          description: "File ID and API Key have been transferred to the form below",
-        });
+        // Transfer data to code generator fields
+        const fileIdInput = document.getElementById("fileId") as HTMLInputElement;
+        const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
+        
+        if (fileIdInput && apiKeyInput) {
+          fileIdInput.value = firstLanguage.file;
+          apiKeyInput.value = key;
+          
+          // Trigger change events
+          const event = new Event('input', { bubbles: true });
+          fileIdInput.dispatchEvent(event);
+          apiKeyInput.dispatchEvent(event);
+          
+          toast({
+            title: "Information transferred",
+            description: "File ID and API Key have been transferred to the form below",
+          });
+        }
+      } else {
+        throw new Error("No valid media information found in the response");
       }
     } catch (err) {
       console.error("Failed to fetch media info:", err);
       setError("Failed to retrieve media information. Please check the ID and try again.");
       setMediaInfo(null);
+      setAllLanguages([]);
     } finally {
       setIsLoading(false);
     }
