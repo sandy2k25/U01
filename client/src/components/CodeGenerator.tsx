@@ -60,20 +60,18 @@ export default function CodeGenerator() {
     
     if (!isValid) return;
     
-    // Update code with new values - using a simpler, more reliable approach
-    let codeLines = originalCode.split('\n');
-
-    // Find and replace the file line
-    for (let i = 0; i < codeLines.length; i++) {
-      if (codeLines[i].includes("file:")) {
-        codeLines[i] = codeLines[i].replace(/file:.*?,/, `file: '${fileId}',`);
-      }
-      if (codeLines[i].includes("key:")) {
-        codeLines[i] = codeLines[i].replace(/key:.*?[}]/, `key: '${apiKey}'}`);
-      }
-    }
+    // Create a new code snippet with updated values
+    const codeTemplate = `fetch('https://oplij.koyeb.app/api/v1/getStream',
+ { method: 'POST', headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify(
+{ file: '${fileId}', 
+ key: '${apiKey}' }
+)}) 
+ .then(response => response.json()) 
+ .then(data =>  console.log(data)) 
+ .catch(error =>  console.error(error));`;
     
-    const updatedCode = codeLines.join('\n');
+    const updatedCode = codeTemplate;
     
     setCurrentCode(updatedCode);
     setCurrentFileId(fileId);
