@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import fetch from "node-fetch";
-import { TelegramBot } from "./telegramBot";
+import type { TelegramBot } from "./telegramBot"; // Import as type only first
 
 // Simple in-memory authentication
 const API_KEY = process.env.ADMIN_API_KEY || "admin-key-123"; // Default key for development
