@@ -100,6 +100,8 @@ export default function DirectM3U8Extractor() {
           description: "Stream URL extracted and copied to clipboard",
         });
       } else {
+        // Clear any previous URL when extraction fails
+        setM3U8Url("");
         console.error("API response doesn't have success or link property");
         toast({
           title: "Extraction failed",
@@ -108,6 +110,8 @@ export default function DirectM3U8Extractor() {
         });
       }
     } catch (error) {
+      // Clear any previous URL when extraction fails
+      setM3U8Url("");
       console.error("Error fetching direct URL:", error);
       toast({
         title: "Extraction failed",

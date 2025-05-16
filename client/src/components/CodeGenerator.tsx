@@ -3,8 +3,9 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Clipboard, Check } from "lucide-react";
+import { Clipboard, Check, Eye, EyeOff } from "lucide-react";
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
@@ -42,6 +43,7 @@ export default function CodeGenerator() {
   const [apiKeyError, setApiKeyError] = useState(false);
   const [isUpdated, setIsUpdated] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [isBlurred, setIsBlurred] = useState(true); // Default to blurred state
   const codeSectionRef = useRef<HTMLDivElement>(null);
   
   // Handle input change events (needed for integration with MediaInfoSearch)
@@ -229,46 +231,75 @@ export default function CodeGenerator() {
       <section className="p-6" ref={codeSectionRef}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Generated Code</h2>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             {isUpdated && (
               <span className="text-sm text-gray-500">Code updated</span>
             )}
-            <Button
-              onClick={copyCodeToClipboard}
-              variant={isCopied ? "default" : "secondary"}
-              className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm font-medium transition duration-200 ${
-                isCopied ? 'bg-success text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-              }`}
-              size="sm"
-            >
-              {isCopied ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  <span>Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Clipboard className="h-4 w-4" />
-                  <span>Copy Code</span>
-                </>
-              )}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={() => setIsBlurred(!isBlurred)}
+                variant="outline"
+                className="flex items-center space-x-1 px-2 py-1 rounded-md text-sm font-medium"
+                size="sm"
+              >
+                {isBlurred ? (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    <span>Show</span>
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="h-4 w-4" />
+                    <span>Hide</span>
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={copyCodeToClipboard}
+                variant={isCopied ? "default" : "secondary"}
+                className={`flex items-center space-x-1 px-2 py-1 rounded-md text-sm font-medium transition duration-200 ${
+                  isCopied ? 'bg-success text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+                size="sm"
+              >
+                {isCopied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Clipboard className="h-4 w-4" />
+                    <span>Copy Code</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
         
         <div className="relative rounded-md overflow-hidden">
-          <SyntaxHighlighter
-            language="javascript"
-            style={atomOneDark}
-            customStyle={{
-              padding: '1rem',
-              borderRadius: '0.375rem',
-              fontSize: '0.875rem',
-              maxHeight: '24rem',
-            }}
-          >
-            {currentCode}
-          </SyntaxHighlighter>
+          <div className={`transition-all duration-200 ${isBlurred ? 'blur-sm hover:blur-[3px]' : 'blur-0'}`}>
+            <SyntaxHighlighter
+              language="javascript"
+              style={atomOneDark}
+              customStyle={{
+                padding: '1rem',
+                borderRadius: '0.375rem',
+                fontSize: '0.875rem',
+                maxHeight: '24rem',
+              }}
+            >
+              {currentCode}
+            </SyntaxHighlighter>
+          </div>
+          {isBlurred && (
+            <div className="absolute inset-0 flex items-center justify-center bg-transparent" onClick={() => setIsBlurred(false)}>
+              <span className="bg-white/90 px-3 py-1.5 rounded-md text-sm font-medium shadow-sm">
+                Click to reveal
+              </span>
+            </div>
+          )}
         </div>
       </section>
     </Card>
