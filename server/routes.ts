@@ -142,6 +142,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Start both Telegram bots (admin only)
+  app.post("/api/admin/start-bots", authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+      let adminBotStarted = false;
+      let userBotStarted = false;
+      const messages = [];
+      
+      // Try to start admin bot
+      const adminBotToken = process.env.ADMIN_BOT_TOKEN;
+      if (adminBotToken) {
+        if (adminTelegramBot) {
+          adminTelegramBot.stop();
+        }
+        
+        adminTelegramBot = new AdminTelegramBot(adminBotToken, storage);
+        adminTelegramBot.start();
+        adminBotStarted = true;
+        await storage.setConfig("adminBotEnabled", "true");
+        await storage.setConfig("adminBotToken", adminBotToken);
+        messages.push("Admin bot started successfully");
+        console.log("Admin Telegram bot started manually");
+      } else {
+        messages.push("Admin bot token not found in environment variables");
+      }
+      
+      // Try to start user bot
+      const userBotToken = process.env.USER_BOT_TOKEN;
+      if (userBotToken) {
+        if (userTelegramBot) {
+          userTelegramBot.stop();
+        }
+        
+        userTelegramBot = new UserTelegramBot(userBotToken, storage);
+        userTelegramBot.start();
+        userBotStarted = true;
+        await storage.setConfig("userBotEnabled", "true");
+        await storage.setConfig("userBotToken", userBotToken);
+        messages.push("User bot started successfully");
+        console.log("User Telegram bot started manually");
+      } else {
+        messages.push("User bot token not found in environment variables");
+      }
+      
+      res.json({
+        success: true,
+        adminBotStarted,
+        userBotStarted,
+        messages
+      });
+    } catch (error) {
+      console.error("Error starting Telegram bots:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to start Telegram bots"
+      });
+    }
+  });
+  
   // Update Admin Telegram bot settings (admin only)
   app.post("/api/admin/config/admin-bot", authenticateAdmin, async (req: Request, res: Response) => {
     try {
