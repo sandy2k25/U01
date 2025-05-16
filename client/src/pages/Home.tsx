@@ -1,6 +1,6 @@
 import CodeGenerator from "@/components/CodeGenerator";
 import MediaInfoSearch from "@/components/MediaInfoSearch";
-import ConsoleScriptHelper from "@/components/ConsoleScriptHelper";
+import M3U8Clipboard from "@/components/M3U8Clipboard";
 
 export default function Home() {
   return (
@@ -16,7 +16,7 @@ export default function Home() {
           
           <CodeGenerator />
           
-          <ConsoleScriptHelper />
+          <M3U8Clipboard />
         </div>
         
         <footer className="mt-8 text-center text-sm text-gray-500">
