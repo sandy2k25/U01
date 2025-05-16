@@ -243,15 +243,22 @@ export class UserTelegramBot extends TelegramBot {
       
       console.log(`Parsed extraction response:`, data);
       
-      // Check if the API request was successful and has the expected format
-      if (data && data.success && data.data && data.data.link && typeof data.data.link === 'string') {
-        return { url: data.data.link };
+      // Check if the API request was successful and has a link
+      if (data && data.success && data.data && data.data.link) {
+        // If link is a string, return it directly
+        if (typeof data.data.link === 'string') {
+          return { url: data.data.link };
+        }
+        // If link is a number, convert it to string - website treats all values as valid
+        else if (typeof data.data.link === 'number') {
+          // Convert the number to a string and return it
+          return { url: data.data.link.toString() };
+        }
       }
       
-      // Handle the case where link is numeric error code 10 (content not available)
-      if (responseText === "10" || data === 10 || 
-          (data && data.data && data.data.link === 10)) {
-        return { url: null, error: "Error code 10: This content is not currently available. The file might be restricted or doesn't exist on the streaming service." };
+      // Only treat it as error code if explicitly failing
+      if (responseText === "10" || data === 10) {
+        return { url: null, error: "Error code 10: This content is not currently available." };
       }
       
       // Handle rate limiting errors
