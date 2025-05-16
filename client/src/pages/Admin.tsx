@@ -200,6 +200,48 @@ export default function AdminSettings() {
     updateTelegramSettings.mutate();
   };
 
+  // Function to manually start the Telegram bots
+  const startBots = async () => {
+    try {
+      const response = await fetch("/api/admin/start-bots", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to start bots");
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast({
+          title: "Bots Started",
+          description: data.messages.join(", "),
+        });
+        
+        // Refresh config data
+        fetchConfigData();
+      } else {
+        toast({
+          title: "Failed to Start Bots",
+          description: data.error || "Unknown error",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error starting bots:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start Telegram bots",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <Link href="/" className="flex items-center text-blue-600 hover:text-blue-800 mb-6">
@@ -211,6 +253,15 @@ export default function AdminSettings() {
         <Settings className="mr-2 h-8 w-8" />
         Admin Settings
       </h1>
+      
+      {isAuthenticated && (
+        <Button 
+          onClick={startBots}
+          className="mb-6 bg-green-600 hover:bg-green-700 text-white"
+        >
+          Start Telegram Bots Now
+        </Button>
+      )}
       
       {!isAuthenticated ? (
         <Card className="p-6 mb-6">
