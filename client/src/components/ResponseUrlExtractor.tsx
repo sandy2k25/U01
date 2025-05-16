@@ -154,33 +154,82 @@ export default function ResponseUrlExtractor() {
   // Handle JavaScript/console object inputs
   const handleConsoleObject = () => {
     try {
-      // Try to extract using regex pattern matching
-      const linkMatch = responseText.match(/link['":\s]+([^'"}\s]+)/);
-      if (linkMatch && linkMatch[1]) {
-        setExtractedUrl(linkMatch[1]);
+      // First, try to match the exact format described:
+      // Object {success: true, data: {...}}
+      // data: Object
+      // link: https://example.com/video.mp4
+      const browserConsoleFormat = responseText.match(/data:\s*Object\s+link:\s*([^\s\n]+)/m);
+      if (browserConsoleFormat && browserConsoleFormat[1]) {
+        setExtractedUrl(browserConsoleFormat[1]);
         toast({
-          title: "URL extracted from console object",
-          description: "Found URL in the console representation",
+          title: "URL extracted successfully",
+          description: "Found URL from browser console format",
         });
         return;
       }
       
-      // If direct pattern matching failed, try to find any URL-like patterns
-      const urlRegex = /(https?:\/\/[^\s'"]+)/g;
+      // Also check alternative formats where 'link:' appears with the URL
+      const linkFormat = responseText.match(/link:\s*([^\s\n,}"']+)/m);
+      if (linkFormat && linkFormat[1]) {
+        setExtractedUrl(linkFormat[1]);
+        toast({
+          title: "URL extracted successfully",
+          description: "Found URL from link property",
+        });
+        return;
+      }
+      
+      // Try to find pattern with quotes
+      const quotedLink = responseText.match(/link:\s*["']([^"']+)["']/m);
+      if (quotedLink && quotedLink[1]) {
+        setExtractedUrl(quotedLink[1]);
+        toast({
+          title: "URL extracted successfully",
+          description: "Found URL in quoted link property",
+        });
+        return;
+      }
+      
+      // Try to find URL after the "link:" text on any line
+      const anyLineUrl = responseText.match(/link:.*?(https?:\/\/[^\s\n"']+)/);
+      if (anyLineUrl && anyLineUrl[1]) {
+        setExtractedUrl(anyLineUrl[1]);
+        toast({
+          title: "URL extracted successfully",
+          description: "Found URL on line with 'link:' text",
+        });
+        return;
+      }
+      
+      // If specific patterns failed, try to extract any URL-like strings
+      const urlRegex = /(https?:\/\/[^\s"'}\)]+)/g;
       const matches = responseText.match(urlRegex);
       
       if (matches && matches.length > 0) {
         setExtractedUrl(matches[0]);
         toast({
-          title: "URL extracted from text",
-          description: "Found a URL pattern in the console output",
+          title: "URL extracted directly",
+          description: "Found URL pattern in the console output",
+        });
+        return;
+      }
+      
+      // Last resort: Look for anything that might be a file path or partial URL
+      const partialUrlRegex = /\/[\w\d\/\.\-\_\+\=\?\&]+\.(mp4|m3u8|ts|mov|avi|mkv|flv)/i;
+      const partialMatches = responseText.match(partialUrlRegex);
+      
+      if (partialMatches && partialMatches.length > 0) {
+        setExtractedUrl(partialMatches[0]);
+        toast({
+          title: "Partial URL extracted",
+          description: "Found what appears to be a media file path",
         });
         return;
       }
       
       toast({
         title: "URL not found",
-        description: "Couldn't extract URL from the console object format",
+        description: "Couldn't find a URL in the console output. Please ensure you've copied the text exactly as shown in the console.",
         variant: "destructive",
       });
       
@@ -188,7 +237,7 @@ export default function ResponseUrlExtractor() {
       console.error("Error parsing console object:", err);
       toast({
         title: "Parsing failed",
-        description: "Could not parse the console object format",
+        description: "Could not parse the console output format",
         variant: "destructive",
       });
     }
@@ -265,15 +314,22 @@ export default function ResponseUrlExtractor() {
               <div className="bg-gray-100 rounded p-2 text-sm mb-2">
                 <p className="flex items-center text-gray-600">
                   <Code className="h-4 w-4 mr-1" /> 
-                  Copy the entire console output, including console browser objects
+                  Copy the entire console output, including:
                 </p>
+                <pre className="mt-1 text-xs bg-gray-200 p-1 rounded overflow-x-auto">
+Object {'{'}success: true, data: {'{'}...{'}'}{'}'}<br/>
+data: Object<br/>
+link: https://example.com/video.mp4
+                </pre>
               </div>
               <Textarea
                 id="consoleObject"
                 value={responseText}
                 onChange={(e) => setResponseText(e.target.value)}
                 className="w-full min-h-[150px] px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary font-mono text-sm"
-                placeholder="Object success: true, data: {link: 'https://example.com/video.mp4'}"
+                placeholder="Object {success: true, data: {...}}
+data: Object
+link: https://example.com/video.mp4"
               />
             </div>
             
