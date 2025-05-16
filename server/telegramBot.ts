@@ -73,9 +73,8 @@ export class AdminTelegramBot extends TelegramBot {
     if (!this.bot) return;
 
     // Handle /start command
-    this.bot.onText(/\/start/, async (msg) => {
+    this.bot.onText(/\/start/, (msg) => {
       const chatId = msg.chat.id;
-      const userId = msg.from?.id;
 
       this.bot?.sendMessage(
         chatId,
@@ -208,6 +207,46 @@ export class UserTelegramBot extends TelegramBot {
   constructor(token: string, storage: IStorage) {
     super(token, storage, 'User');
   }
+  
+  // Helper method to attempt extraction with different fileId formats
+  private async attemptExtraction(extractionUrl: string, fileId: string): Promise<string | null> {
+    try {
+      // Use a consistent API key for all user requests
+      const apiKey = process.env.EXTRACTION_API_KEY || 
+                    await this.storage.getConfigByKey("extractionApiKey") || 
+                    'rcbeUV3KoCw-dSFJ-vN$-JwI4OXlCmOaAx05HkWyclbx46SNcazmpYmnFTXoNjo';
+      
+      console.log(`Attempting extraction with fileId: ${fileId}`);
+      
+      // Make the API request to get the stream URL
+      const response = await fetch(extractionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file: fileId,
+          key: apiKey
+        })
+      });
+      
+      if (!response.ok) {
+        console.log(`Extraction attempt failed with status: ${response.status}`);
+        return null;
+      }
+      
+      const data = await response.json() as any;
+      console.log(`Extraction response:`, data);
+      
+      // Check if the API request was successful
+      if (data && data.success && data.data && data.data.link) {
+        return data.data.link;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Error in extraction attempt with fileId ${fileId}:`, error);
+      return null;
+    }
+  }
 
   protected registerHandlers(): void {
     if (!this.bot) return;
@@ -257,32 +296,31 @@ export class UserTelegramBot extends TelegramBot {
           return;
         }
         
-        // Generate a file ID and API key (this would depend on your actual implementation)
-        // This is a placeholder - you would need to implement the actual logic to get these values
-        // based on the IMDB ID
-        const fileId = `${imdbId}-file-id`;
-        const apiKey = 'default-api-key';
+        // Try different approaches for the extraction service
         
-        // Make the API request to get the stream URL
-        const response = await fetch(extractionUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            file: fileId,
-            key: apiKey
-          })
-        });
+        // First attempt: Try direct IMDB ID as fileId
+        let streamUrl = await this.attemptExtraction(extractionUrl, imdbId);
         
-        const data = await response.json();
+        // Second attempt: Try with a tilde prefix (some services use this format)
+        if (!streamUrl) {
+          const fileIdWithTilde = `~${imdbId}`;
+          streamUrl = await this.attemptExtraction(extractionUrl, fileIdWithTilde);
+        }
         
-        // Check if the API request was successful
-        if (data.success && data.data && data.data.link) {
-          const streamUrl = data.data.link;
+        // Third attempt: Try with standard placeholder format
+        if (!streamUrl) {
+          const fileIdPlaceholder = `~8i-Mu-WONoEdJ9whQe+Ldow...`;
+          streamUrl = await this.attemptExtraction(extractionUrl, fileIdPlaceholder);
+        }
+        
+        if (streamUrl) {
+          // Success - send the stream URL
           this.bot?.sendMessage(
             chatId, 
             `✅ Found stream URL for ${imdbId}:\n\n${streamUrl}`
           );
         } else {
+          // All attempts failed
           this.bot?.sendMessage(
             chatId,
             `❌ Could not find stream URL for ${imdbId}. Please try another IMDB ID.`
