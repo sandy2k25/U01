@@ -327,26 +327,63 @@ export class UserTelegramBot extends TelegramBot {
         // First attempt: Try direct IMDB ID as fileId
         let result = await this.attemptExtraction(extractionUrl, imdbId);
         
-        // Check if we got rate limited on first attempt
-        if (result.error && result.error.includes("rate limiting")) {
+        // If we hit a rate limit on the first attempt, inform the user and exit
+        if (result.error && (result.error.includes("rate limiting") || result.error.includes("Too many requests"))) {
           this.bot?.sendMessage(chatId, 
-            `⚠️ The extraction service is rate limited. Waiting for 5 seconds before trying again...`
+            `⚠️ The extraction service is currently rate limited.\n\n` +
+            `Please try again in a few minutes when the service has recovered.`
           );
-          await delay(5000);
+          return;
         }
         
-        // Check if we have a URL already, or if we should try next format
-        if (!result.url && !(result.error && result.error.includes("rate limiting"))) {
-          await delay(1000); // Add small delay between requests
+        // If we get error code 10 (content not available) directly, no need to try other formats
+        if (result.error && result.error.includes("Error code 10")) {
+          this.bot?.sendMessage(
+            chatId,
+            `❌ Could not find stream URL for ${imdbId}.\n\n` +
+            `${result.error}\n\n` +
+            `Please try another IMDB ID.`
+          );
+          return;
+        }
+        
+        // Only try alternative formats if we didn't get a URL and didn't hit rate limits
+        if (!result.url) {
+          await delay(2000); // Add larger delay between requests
           const fileIdWithTilde = `~${imdbId}`;
-          result = await this.attemptExtraction(extractionUrl, fileIdWithTilde);
-        }
-        
-        // Check if we have a URL already, or if we should try next format
-        if (!result.url && !(result.error && result.error.includes("rate limiting"))) {
-          await delay(1000); // Add small delay between requests
-          const fileIdPlaceholder = `~${imdbId.replace('tt', '')}`;
-          result = await this.attemptExtraction(extractionUrl, fileIdPlaceholder);
+          
+          // Check if we should continue or if we already know content isn't available
+          const tildePrefixResult = await this.attemptExtraction(extractionUrl, fileIdWithTilde);
+          
+          // Check for rate limiting on the second attempt
+          if (tildePrefixResult.error && (tildePrefixResult.error.includes("rate limiting") || 
+              tildePrefixResult.error.includes("Too many requests"))) {
+            this.bot?.sendMessage(chatId, 
+              `⚠️ The extraction service is currently rate limited.\n\n` +
+              `Please try again in a few minutes when the service has recovered.`
+            );
+            return;
+          }
+          
+          // If we got a URL with this format, use it
+          if (tildePrefixResult.url) {
+            result = tildePrefixResult;
+          }
+          // If we got error code 10, no need to try the third format
+          else if (tildePrefixResult.error && tildePrefixResult.error.includes("Error code 10")) {
+            result = tildePrefixResult;
+          }
+          // Only try third format if necessary
+          else if (!tildePrefixResult.url) {
+            await delay(2000); // Add larger delay between requests
+            const fileIdPlaceholder = `~${imdbId.replace('tt', '')}`;
+            const numberOnlyResult = await this.attemptExtraction(extractionUrl, fileIdPlaceholder);
+            
+            // If we got a result with the third format, use it
+            if (numberOnlyResult.url || numberOnlyResult.error) {
+              result = numberOnlyResult;
+            }
+          }
         }
         
         if (result.url) {
