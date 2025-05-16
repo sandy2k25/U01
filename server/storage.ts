@@ -28,9 +28,14 @@ export class MemStorage implements IStorage {
     
     // Initialize with default extraction URL
     this.setConfig("extractionUrl", "https://oplij.koyeb.app/api/v1/getStream");
-    // Initialize with default Telegram bot settings
-    this.setConfig("telegramBotEnabled", "false");
-    this.setConfig("telegramBotToken", "");
+    
+    // Initialize with default Admin Telegram bot settings
+    this.setConfig("adminBotEnabled", "false");
+    this.setConfig("adminBotToken", "");
+    
+    // Initialize with default User Telegram bot settings
+    this.setConfig("userBotEnabled", "false");
+    this.setConfig("userBotToken", "");
   }
 
   async getUser(id: number): Promise<User | undefined> {

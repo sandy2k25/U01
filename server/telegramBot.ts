@@ -1,24 +1,24 @@
 import TelegramBotAPI from 'node-telegram-bot-api';
 import { IStorage } from './storage';
+import fetch from 'node-fetch';
 
-// List of authorized Telegram user IDs who can use the bot
-// This could be moved to the database/config in a production environment
-const AUTHORIZED_USERS: number[] = [];
+// Base TelegramBot class that can be extended by specific implementations
+export abstract class TelegramBot {
+  protected bot: TelegramBotAPI | null = null;
+  protected token: string;
+  protected storage: IStorage;
+  protected isRunning: boolean = false;
+  protected botType: string;
 
-export class TelegramBot {
-  private bot: TelegramBotAPI | null = null;
-  private token: string;
-  private storage: IStorage;
-  private isRunning: boolean = false;
-
-  constructor(token: string, storage: IStorage) {
+  constructor(token: string, storage: IStorage, botType: string) {
     this.token = token;
     this.storage = storage;
+    this.botType = botType;
   }
 
   // Start the Telegram bot
   public start(): void {
-    if (this.isRunning) {
+    if (this.isRunning || !this.token) {
       return;
     }
 
@@ -27,12 +27,12 @@ export class TelegramBot {
       this.bot = new TelegramBotAPI(this.token, { polling: true });
       this.isRunning = true;
 
-      console.log('Telegram bot started');
+      console.log(`${this.botType} Telegram bot started`);
 
       // Register message handlers
       this.registerHandlers();
     } catch (error) {
-      console.error('Failed to start Telegram bot:', error);
+      console.error(`Failed to start ${this.botType} Telegram bot:`, error);
       this.isRunning = false;
       this.bot = null;
     }
@@ -49,14 +49,27 @@ export class TelegramBot {
       this.bot.stopPolling();
       this.isRunning = false;
       this.bot = null;
-      console.log('Telegram bot stopped');
+      console.log(`${this.botType} Telegram bot stopped`);
     } catch (error) {
-      console.error('Error stopping Telegram bot:', error);
+      console.error(`Error stopping ${this.botType} Telegram bot:`, error);
     }
   }
 
-  // Register message handlers
-  private registerHandlers(): void {
+  // Abstract method to be implemented by specific bot types
+  protected abstract registerHandlers(): void;
+}
+
+// Admin Telegram Bot for managing the extraction URL
+export class AdminTelegramBot extends TelegramBot {
+  // List of authorized admin user IDs
+  private authorizedAdmins: number[] = [];
+
+  constructor(token: string, storage: IStorage) {
+    super(token, storage, 'Admin');
+  }
+
+  // Register admin-specific handlers
+  protected registerHandlers(): void {
     if (!this.bot) return;
 
     // Handle /start command
@@ -64,32 +77,20 @@ export class TelegramBot {
       const chatId = msg.chat.id;
       const userId = msg.from?.id;
 
-      // Check if user is authorized
-      if (userId && AUTHORIZED_USERS.length > 0 && !AUTHORIZED_USERS.includes(userId)) {
-        this.bot?.sendMessage(chatId, 'Unauthorized access. Please contact the administrator.');
-        return;
-      }
-
       this.bot?.sendMessage(
         chatId,
-        `Welcome to the Extraction URL Manager Bot!\n\n` +
+        `Welcome to the Admin Bot!\n\n` +
         `Commands:\n` +
         `/geturl - Get the current extraction URL\n` +
         `/seturl [new-url] - Set a new extraction URL\n` +
-        `/status - Check bot status`
+        `/status - Check bot status\n` +
+        `/authorize [user-id] - Add an admin`
       );
     });
 
     // Handle /geturl command - Get the current extraction URL
     this.bot.onText(/\/geturl/, async (msg) => {
       const chatId = msg.chat.id;
-      const userId = msg.from?.id;
-
-      // Check if user is authorized
-      if (userId && AUTHORIZED_USERS.length > 0 && !AUTHORIZED_USERS.includes(userId)) {
-        this.bot?.sendMessage(chatId, 'Unauthorized access. Please contact the administrator.');
-        return;
-      }
 
       try {
         const extractionUrl = await this.storage.getConfigByKey("extractionUrl");
@@ -105,9 +106,9 @@ export class TelegramBot {
       const chatId = msg.chat.id;
       const userId = msg.from?.id;
 
-      // Check if user is authorized
-      if (userId && AUTHORIZED_USERS.length > 0 && !AUTHORIZED_USERS.includes(userId)) {
-        this.bot?.sendMessage(chatId, 'Unauthorized access. Please contact the administrator.');
+      // Check if user is authorized when list is not empty
+      if (this.authorizedAdmins.length > 0 && !this.authorizedAdmins.includes(userId || 0)) {
+        this.bot?.sendMessage(chatId, 'Only authorized admins can change the URL.');
         return;
       }
 
@@ -135,21 +136,14 @@ export class TelegramBot {
     // Handle /status command - Check bot status
     this.bot.onText(/\/status/, async (msg) => {
       const chatId = msg.chat.id;
-      const userId = msg.from?.id;
-
-      // Check if user is authorized
-      if (userId && AUTHORIZED_USERS.length > 0 && !AUTHORIZED_USERS.includes(userId)) {
-        this.bot?.sendMessage(chatId, 'Unauthorized access. Please contact the administrator.');
-        return;
-      }
 
       try {
         const extractionUrl = await this.storage.getConfigByKey("extractionUrl");
         this.bot?.sendMessage(
           chatId,
-          `Bot Status: Running\n` +
+          `Admin Bot Status: Running\n` +
           `Current Extraction URL: ${extractionUrl}\n` +
-          `Authorized Users: ${AUTHORIZED_USERS.length > 0 ? AUTHORIZED_USERS.join(', ') : 'All users'}`
+          `Authorized Admins: ${this.authorizedAdmins.length > 0 ? this.authorizedAdmins.join(', ') : 'All users'}`
         );
       } catch (error) {
         console.error('Error getting bot status:', error);
@@ -157,15 +151,14 @@ export class TelegramBot {
       }
     });
 
-    // Handle /authorize command - Add a user to authorized users
+    // Handle /authorize command - Add a user as admin
     this.bot.onText(/\/authorize (.+)/, async (msg, match) => {
       const chatId = msg.chat.id;
       const userId = msg.from?.id;
       
-      // Only the first user to use this command will be considered an admin
-      // or existing authorized users
-      if (AUTHORIZED_USERS.length > 0 && !AUTHORIZED_USERS.includes(userId || 0)) {
-        this.bot?.sendMessage(chatId, 'Only authorized users can add new users.');
+      // Only existing authorized admins can add new admins (or the first user if list is empty)
+      if (this.authorizedAdmins.length > 0 && !this.authorizedAdmins.includes(userId || 0)) {
+        this.bot?.sendMessage(chatId, 'Only authorized admins can add new admins.');
         return;
       }
       
@@ -177,12 +170,12 @@ export class TelegramBot {
         return;
       }
       
-      // Add the user ID to authorized users if not already present
-      if (!AUTHORIZED_USERS.includes(newUserId)) {
-        AUTHORIZED_USERS.push(newUserId);
-        this.bot?.sendMessage(chatId, `User ${newUserId} added to authorized users.`);
+      // Add the user ID to authorized admins if not already present
+      if (!this.authorizedAdmins.includes(newUserId)) {
+        this.authorizedAdmins.push(newUserId);
+        this.bot?.sendMessage(chatId, `User ${newUserId} added as an admin.`);
       } else {
-        this.bot?.sendMessage(chatId, `User ${newUserId} is already authorized.`);
+        this.bot?.sendMessage(chatId, `User ${newUserId} is already an admin.`);
       }
     });
 
@@ -202,7 +195,117 @@ export class TelegramBot {
           'Unknown command. Available commands:\n' +
           '/geturl - Get current extraction URL\n' +
           '/seturl [url] - Set a new extraction URL\n' +
-          '/status - Check bot status'
+          '/status - Check bot status\n' +
+          '/authorize [user-id] - Add an admin'
+        );
+      }
+    });
+  }
+}
+
+// User Telegram Bot for getting direct stream URLs from IMDB IDs
+export class UserTelegramBot extends TelegramBot {
+  constructor(token: string, storage: IStorage) {
+    super(token, storage, 'User');
+  }
+
+  protected registerHandlers(): void {
+    if (!this.bot) return;
+
+    // Handle /start command
+    this.bot.onText(/\/start/, (msg) => {
+      const chatId = msg.chat.id;
+      
+      this.bot?.sendMessage(
+        chatId,
+        `Welcome to the Stream URL Bot!\n\n` +
+        `Just send me an IMDB ID (e.g., tt1234567) and I'll get the direct stream URL for you.\n\n` +
+        `Example: tt0111161`
+      );
+    });
+
+    // Handle /help command
+    this.bot.onText(/\/help/, (msg) => {
+      const chatId = msg.chat.id;
+      
+      this.bot?.sendMessage(
+        chatId,
+        `This bot provides direct stream URLs for movies and TV shows.\n\n` +
+        `Simply send your IMDB ID (starting with 'tt') and I'll find the stream URL for you.\n\n` +
+        `Example: tt0111161`
+      );
+    });
+
+    // Handle IMDB IDs (in the format tt1234567)
+    this.bot.onText(/tt\d+/, async (msg, match) => {
+      const chatId = msg.chat.id;
+      const imdbId = match ? match[0] : '';
+      
+      if (!imdbId) {
+        this.bot?.sendMessage(chatId, 'Please provide a valid IMDB ID (e.g., tt1234567)');
+        return;
+      }
+      
+      try {
+        this.bot?.sendMessage(chatId, `🔍 Searching for stream URL for ${imdbId}...`);
+        
+        // Get the current extraction URL from storage
+        const extractionUrl = await this.storage.getConfigByKey("extractionUrl");
+        
+        if (!extractionUrl) {
+          this.bot?.sendMessage(chatId, 'Extraction service URL is not configured. Please contact admin.');
+          return;
+        }
+        
+        // Generate a file ID and API key (this would depend on your actual implementation)
+        // This is a placeholder - you would need to implement the actual logic to get these values
+        // based on the IMDB ID
+        const fileId = `${imdbId}-file-id`;
+        const apiKey = 'default-api-key';
+        
+        // Make the API request to get the stream URL
+        const response = await fetch(extractionUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            file: fileId,
+            key: apiKey
+          })
+        });
+        
+        const data = await response.json();
+        
+        // Check if the API request was successful
+        if (data.success && data.data && data.data.link) {
+          const streamUrl = data.data.link;
+          this.bot?.sendMessage(
+            chatId, 
+            `✅ Found stream URL for ${imdbId}:\n\n${streamUrl}`
+          );
+        } else {
+          this.bot?.sendMessage(
+            chatId,
+            `❌ Could not find stream URL for ${imdbId}. Please try another IMDB ID.`
+          );
+        }
+      } catch (error) {
+        console.error('Error processing IMDB ID:', error);
+        this.bot?.sendMessage(
+          chatId,
+          `❌ Error processing your request. Please try again later.`
+        );
+      }
+    });
+
+    // Handle all other messages
+    this.bot.on('message', (msg) => {
+      // Skip command messages as they're handled above
+      if (msg.text && !msg.text.startsWith('/') && !msg.text.match(/tt\d+/)) {
+        const chatId = msg.chat.id;
+        this.bot?.sendMessage(
+          chatId,
+          `Please send me an IMDB ID starting with 'tt' followed by numbers.\n` +
+          `Example: tt0111161`
         );
       }
     });
