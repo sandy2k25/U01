@@ -2,13 +2,24 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Play, Clipboard, Check } from "lucide-react";
+import { Play, Clipboard, Check, Settings } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function DirectM3U8Extractor() {
   const [m3u8Url, setM3U8Url] = useState("");
   const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  // Fetch the current extraction URL from the server
+  const { data: extractionUrlData } = useQuery({
+    queryKey: ['/api/config/extraction-url'],
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Get the current extraction URL from the config
+  const extractionUrl = extractionUrlData?.url || 'https://oplij.koyeb.app/api/v1/getStream';
 
   // Automatically fetch the URL when credentials in Code Generator change
   useEffect(() => {
@@ -47,7 +58,7 @@ export default function DirectM3U8Extractor() {
     
     const cleanup = setupChangeListeners();
     return cleanup;
-  }, []);
+  }, [extractionUrl]); // Re-run effect when the extractionUrl changes
 
   // Fetch the M3U8 URL using the provided credentials
   const fetchM3U8WithCredentials = async (fileId: string, apiKey: string) => {
@@ -56,7 +67,7 @@ export default function DirectM3U8Extractor() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('https://oplij.koyeb.app/api/v1/getStream', {
+      const response = await fetch(extractionUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,9 +92,19 @@ export default function DirectM3U8Extractor() {
         });
       } else {
         console.error("API response doesn't have success or link property");
+        toast({
+          title: "Extraction failed",
+          description: "Could not extract stream URL from the response",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error fetching direct URL:", error);
+      toast({
+        title: "Extraction failed",
+        description: `Error connecting to extraction service: ${extractionUrl}`,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
