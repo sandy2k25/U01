@@ -14,8 +14,8 @@ export default function CodeGenerator() {
   const originalCode = `fetch('https://oplij.koyeb.app/api/v1/getStream',
  { method: 'POST', headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify(
-{ file: '~8i-Mu-WONoEdJ9whQe+Ldow...', 
- key: 'rcbeUV3KoCw-dSFJ-vN$-JwI4OXlCmOaAx05HkWyclbx46SNcazmpYmnFTXoNjo' }
+{ file: 'YOUR_FILE_ID', 
+ key: 'YOUR_API_KEY' }
 )}) 
  .then(response => response.json()) 
  .then(data => {
@@ -30,8 +30,8 @@ export default function CodeGenerator() {
  }) 
  .catch(error =>  console.error(error));`;
   
-  const initialFileId = '~8i-Mu-WONoEdJ9whQe+Ldow...';
-  const initialApiKey = 'rcbeUV3KoCw-dSFJ-vN$-JwI4OXlCmOaAx05HkWyclbx46SNcazmpYmnFTXoNjo';
+  const initialFileId = '';
+  const initialApiKey = '';
 
   // State
   const [fileId, setFileId] = useState(initialFileId);

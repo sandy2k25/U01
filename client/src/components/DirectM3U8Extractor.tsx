@@ -33,13 +33,19 @@ export default function DirectM3U8Extractor() {
       const fileIdInput = document.getElementById("fileId") as HTMLInputElement;
       const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
       
-      if (fileIdInput && apiKeyInput && fileIdInput.value && apiKeyInput.value) {
+      // Only auto-extract if both fields have non-empty values
+      if (fileIdInput && apiKeyInput && 
+          fileIdInput.value && fileIdInput.value.trim() !== '' &&
+          apiKeyInput.value && apiKeyInput.value.trim() !== '') {
         fetchM3U8WithCredentials(fileIdInput.value, apiKeyInput.value);
+      } else if (m3u8Url) {
+        // Clear any previous URL if credentials are now empty
+        setM3U8Url("");
       }
     };
 
-    // Check initially
-    checkForCredentials();
+    // Check initially - but don't auto-extract on first load
+    // We'll let the user enter values first
 
     // Setup listeners to detect changes in the Code Generator fields
     const setupChangeListeners = () => {
@@ -64,7 +70,7 @@ export default function DirectM3U8Extractor() {
     
     const cleanup = setupChangeListeners();
     return cleanup;
-  }, [extractionUrl]); // Re-run effect when the extractionUrl changes
+  }, [extractionUrl, m3u8Url]); // Re-run effect when the extractionUrl changes
 
   // Fetch the M3U8 URL using the provided credentials
   const fetchM3U8WithCredentials = async (fileId: string, apiKey: string) => {
