@@ -320,8 +320,6 @@ export class UserTelegramBot extends TelegramBot {
           return;
         }
         
-        // Try different approaches for the extraction service with rate limiting protection
-        
         // Helper function to add delay 
         const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
         
@@ -338,7 +336,7 @@ export class UserTelegramBot extends TelegramBot {
         }
         
         // If we get error code 10 (content not available) directly, no need to try other formats
-        if (result.error && result.error.includes("Error code 10")) {
+        if (result.error && result.error.includes("Content not available")) {
           this.bot?.sendMessage(
             chatId,
             `❌ Could not find stream URL for ${imdbId}.\n\n` +
@@ -371,7 +369,7 @@ export class UserTelegramBot extends TelegramBot {
             result = tildePrefixResult;
           }
           // If we got error code 10, no need to try the third format
-          else if (tildePrefixResult.error && tildePrefixResult.error.includes("Error code 10")) {
+          else if (tildePrefixResult.error && tildePrefixResult.error.includes("Content not available")) {
             result = tildePrefixResult;
           }
           // Only try third format if necessary
@@ -388,10 +386,33 @@ export class UserTelegramBot extends TelegramBot {
         }
         
         if (result.url) {
-          // Success - send the stream URL
+          // Success - Ask for language selection like the website does
+          
+          // Create inline keyboard for language selection
+          const keyboard = {
+            inline_keyboard: [
+              [
+                { text: '🇺🇸 English', callback_data: `lang_en_${imdbId}` },
+                { text: '🇪🇸 Spanish', callback_data: `lang_es_${imdbId}` }
+              ],
+              [
+                { text: '🇫🇷 French', callback_data: `lang_fr_${imdbId}` },
+                { text: '🇩🇪 German', callback_data: `lang_de_${imdbId}` }
+              ],
+              [
+                { text: '🇮🇹 Italian', callback_data: `lang_it_${imdbId}` },
+                { text: '🇯🇵 Japanese', callback_data: `lang_jp_${imdbId}` }
+              ],
+              [
+                { text: '🌐 Original', callback_data: `lang_original_${imdbId}` }
+              ]
+            ]
+          };
+          
           this.bot?.sendMessage(
-            chatId, 
-            `✅ Found stream URL for ${imdbId}:\n\n${result.url}`
+            chatId,
+            `✅ Found stream for ${imdbId}!\n\nPlease select your preferred language:`, 
+            { reply_markup: keyboard }
           );
         } else {
           // All attempts failed
@@ -408,6 +429,64 @@ export class UserTelegramBot extends TelegramBot {
           chatId,
           `❌ Error processing your request. Please try again later.`
         );
+      }
+    });
+    
+    // Handle language selection callbacks
+    this.bot.on('callback_query', async (callbackQuery) => {
+      if (!callbackQuery.data || !callbackQuery.message) return;
+      
+      const chatId = callbackQuery.message.chat.id;
+      const data = callbackQuery.data;
+      
+      // Check if this is a language selection callback
+      if (data.startsWith('lang_')) {
+        try {
+          // Extract language and IMDB ID
+          const parts = data.split('_');
+          if (parts.length < 3) return;
+          
+          const language = parts[1];
+          const imdbId = parts.slice(2).join('_'); // In case the IMDB ID contains underscores
+          
+          // Get the extraction URL from storage
+          const extractionUrl = await this.storage.getConfigByKey("extractionUrl");
+          
+          if (!extractionUrl) {
+            this.bot?.sendMessage(chatId, 'Extraction service URL is not configured. Please contact admin.');
+            return;
+          }
+          
+          // Get the stream URL (reusing the most successful format)
+          const result = await this.attemptExtraction(extractionUrl, imdbId);
+          
+          if (result.url) {
+            // Answer the callback query to stop the loading indicator
+            this.bot?.answerCallbackQuery(callbackQuery.id, { text: `Selected: ${language}` });
+            
+            // Send the stream URL with the selected language
+            this.bot?.sendMessage(
+              chatId,
+              `🎬 Stream URL for ${imdbId} (${language}):\n\n${result.url}\n\n` +
+              `🔊 Selected language: ${language}\n` +
+              `🎯 Direct link ready to use in any player`
+            );
+          } else {
+            // If we fail to get the URL again
+            this.bot?.answerCallbackQuery(callbackQuery.id, { text: "Failed to get stream URL" });
+            this.bot?.sendMessage(
+              chatId, 
+              `❌ Error retrieving the stream URL. Please try again later.`
+            );
+          }
+        } catch (error) {
+          console.error('Error processing language selection:', error);
+          this.bot?.answerCallbackQuery(callbackQuery.id, { text: "Error processing request" });
+          this.bot?.sendMessage(
+            chatId,
+            `❌ Error processing your language selection. Please try again.`
+          );
+        }
       }
     });
 
