@@ -4,9 +4,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Clipboard, Check, ArrowDownRight, Code } from "lucide-react";
+import { Clipboard, Check, ArrowDownRight, Code, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 export default function ResponseUrlExtractor() {
   const [responseText, setResponseText] = useState("");
@@ -273,16 +275,155 @@ export default function ResponseUrlExtractor() {
       });
   };
 
+  const consoleExtractorCode = `
+// Extract URL from API response
+function extractStreamUrl(apiResponse) {
+  if (!apiResponse) {
+    console.error("No response object provided");
+    return null;
+  }
+  
+  try {
+    // Check if it has data.link
+    if (apiResponse.data && apiResponse.data.link) {
+      console.log("✅ URL extracted:", apiResponse.data.link);
+      return apiResponse.data.link;
+    }
+    
+    // Check other common patterns
+    if (apiResponse.link) {
+      console.log("✅ URL extracted:", apiResponse.link);
+      return apiResponse.link;
+    }
+    
+    if (apiResponse.data && apiResponse.data.stream) {
+      console.log("✅ URL extracted:", apiResponse.data.stream);
+      return apiResponse.data.stream;
+    }
+    
+    // Deep search for URLs in the object
+    const urls = findUrlsInObject(apiResponse);
+    if (urls.length > 0) {
+      console.log("✅ URL found:", urls[0]);
+      return urls[0]; 
+    }
+    
+    console.error("❌ No URL found in the response object");
+    return null;
+    
+  } catch (error) {
+    console.error("Error extracting URL:", error);
+    return null;
+  }
+}
+
+// Helper function to find URLs in an object
+function findUrlsInObject(obj, urls = []) {
+  if (!obj || typeof obj !== 'object') return urls;
+  
+  for (const key in obj) {
+    const value = obj[key];
+    
+    // Check if value is a string that looks like a URL
+    if (typeof value === 'string' && /^https?:\\/\\//i.test(value)) {
+      if (value.includes('.mp4') || value.includes('.m3u8') || 
+          value.includes('/stream') || value.includes('/video') ||
+          value.includes('/media')) {
+        urls.push(value);
+      }
+    }
+    
+    // Recursively search nested objects
+    if (value && typeof value === 'object') {
+      findUrlsInObject(value, urls);
+    }
+  }
+  
+  return urls;
+}
+
+// Get the last API response from the console
+// (This should be the variable name of your API response)
+const lastResponse = $_;
+
+// Extract and copy the URL to clipboard
+const url = extractStreamUrl(lastResponse);
+if (url) {
+  navigator.clipboard.writeText(url)
+    .then(() => console.log("✅ URL copied to clipboard!"))
+    .catch(err => console.error("Failed to copy:", err));
+} else {
+  console.log("❌ Couldn't extract URL from the last response");
+}
+`;
+
   return (
     <Card className="bg-white rounded-xl shadow-md overflow-hidden">
       <section className="p-6">
         <h2 className="text-xl font-semibold mb-4">URL Extractor</h2>
         
-        <Tabs defaultValue="paste" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+        <Tabs defaultValue="script" className="w-full" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="script">Console Script</TabsTrigger>
             <TabsTrigger value="paste">JSON Response</TabsTrigger>
             <TabsTrigger value="console">Console Object</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="script" className="space-y-4">
+            <div className="bg-gray-100 rounded-lg p-4 text-sm mb-2">
+              <h3 className="font-medium text-gray-800 mb-2 flex items-center">
+                <Code className="h-4 w-4 mr-2" />
+                Copy-Paste Console Script (Easiest Method)
+              </h3>
+              
+              <ol className="list-decimal pl-5 space-y-2 text-gray-700">
+                <li>After running your API request in the browser console, you'll see a response like <code className="bg-gray-200 px-1 rounded">Object {'{'}success: true, data: {...}{'}'}...</code></li>
+                <li>Click the copy button below to copy this script</li>
+                <li>Paste and run it in your browser console</li>
+                <li>It will automatically extract and copy the URL to your clipboard</li>
+              </ol>
+              
+              <div className="mt-4 relative">
+                <SyntaxHighlighter
+                  language="javascript"
+                  style={atomOneDark}
+                  customStyle={{
+                    padding: '1rem',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.75rem',
+                    maxHeight: '12rem',
+                  }}
+                >
+                  {consoleExtractorCode}
+                </SyntaxHighlighter>
+                
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(consoleExtractorCode)
+                      .then(() => {
+                        toast({
+                          title: "Script copied to clipboard",
+                          description: "Now paste it in your browser console and run it",
+                        });
+                      })
+                      .catch(err => {
+                        console.error('Failed to copy: ', err);
+                        toast({
+                          title: "Failed to copy",
+                          description: "Please try selecting and copying the code manually",
+                          variant: "destructive",
+                        });
+                      });
+                  }}
+                  className="absolute top-2 right-2 bg-gray-800 hover:bg-gray-700 text-white flex items-center space-x-1 py-1 px-2 rounded text-xs"
+                  size="sm"
+                >
+                  <Clipboard className="h-3 w-3 mr-1" />
+                  <span>Copy</span>
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
           
           <TabsContent value="paste" className="space-y-4">
             <div className="space-y-2">
