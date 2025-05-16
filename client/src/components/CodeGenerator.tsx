@@ -97,7 +97,7 @@ export default function CodeGenerator() {
     
     if (!isValid) return;
     
-    // Create a new code snippet with updated values
+    // Create a new code snippet with updated values and auto-extract URL functionality
     const codeTemplate = `fetch('https://oplij.koyeb.app/api/v1/getStream',
  { method: 'POST', headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify(
@@ -105,8 +105,23 @@ export default function CodeGenerator() {
  key: '${apiKey}' }
 )}) 
  .then(response => response.json()) 
- .then(data =>  console.log(data)) 
- .catch(error =>  console.error(error));`;
+ .then(data => {
+   console.log(data);
+   // Auto-extract and copy the direct M3U8 URL
+   if (data.success && data.data && data.data.link) {
+     const directUrl = data.data.link;
+     console.log('----------------------------------------');
+     console.log('DIRECT M3U8 URL:');
+     console.log(directUrl);
+     console.log('----------------------------------------');
+     
+     // Copy to clipboard automatically
+     navigator.clipboard.writeText(directUrl)
+       .then(() => console.log('✓ Direct URL copied to clipboard! Ready to paste anywhere.'))
+       .catch(err => console.error('Failed to copy URL:', err));
+   }
+ }) 
+ .catch(error => console.error(error));`;
     
     const updatedCode = codeTemplate;
     
