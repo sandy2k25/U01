@@ -1,34 +1,61 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Play, Clipboard, Check, RefreshCw } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Play, Clipboard, Check } from "lucide-react";
 
 export default function DirectM3U8Extractor() {
-  const [fileId, setFileId] = useState("");
-  const [apiKey, setApiKey] = useState("");
   const [m3u8Url, setM3U8Url] = useState("");
   const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Directly fetch the M3U8 URL
-  const fetchM3U8Url = async () => {
-    if (!fileId.trim() || !apiKey.trim()) {
-      toast({
-        title: "Missing credentials",
-        description: "Please enter both a File ID and API Key",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Automatically fetch the URL when credentials in Code Generator change
+  useEffect(() => {
+    const checkForCredentials = () => {
+      const fileIdInput = document.getElementById("fileId") as HTMLInputElement;
+      const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
+      
+      if (fileIdInput && apiKeyInput && fileIdInput.value && apiKeyInput.value) {
+        fetchM3U8WithCredentials(fileIdInput.value, apiKeyInput.value);
+      }
+    };
 
+    // Check initially
+    checkForCredentials();
+
+    // Setup listeners to detect changes in the Code Generator fields
+    const setupChangeListeners = () => {
+      const fileIdInput = document.getElementById("fileId") as HTMLInputElement;
+      const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
+      
+      if (fileIdInput && apiKeyInput) {
+        const handleFileIdChange = () => checkForCredentials();
+        const handleApiKeyChange = () => checkForCredentials();
+        
+        fileIdInput.addEventListener('input', handleFileIdChange);
+        apiKeyInput.addEventListener('input', handleApiKeyChange);
+        
+        return () => {
+          fileIdInput.removeEventListener('input', handleFileIdChange);
+          apiKeyInput.removeEventListener('input', handleApiKeyChange);
+        };
+      }
+      
+      return () => {};
+    };
+    
+    const cleanup = setupChangeListeners();
+    return cleanup;
+  }, []);
+
+  // Fetch the M3U8 URL using the provided credentials
+  const fetchM3U8WithCredentials = async (fileId: string, apiKey: string) => {
+    if (!fileId || !apiKey) return;
+    
     setIsLoading(true);
-    setM3U8Url("");
-
+    
     try {
-      // Make the API request directly
       const response = await fetch('https://oplij.koyeb.app/api/v1/getStream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -37,52 +64,42 @@ export default function DirectM3U8Extractor() {
           key: apiKey
         })
       });
-
+      
       const data = await response.json();
-
+      
       if (data.success && data.data && data.data.link) {
         const directUrl = data.data.link;
         setM3U8Url(directUrl);
         
-        // Auto-copy to clipboard
         await navigator.clipboard.writeText(directUrl);
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);
         
         toast({
-          title: "URL extracted and copied",
-          description: "The M3U8 URL has been extracted and copied to clipboard",
+          title: "Direct URL ready",
+          description: "Stream URL extracted and copied to clipboard",
         });
       } else {
-        toast({
-          title: "URL not found",
-          description: "Could not extract M3U8 URL from the API response",
-          variant: "destructive",
-        });
+        console.error("API response doesn't have success or link property");
       }
     } catch (error) {
-      console.error("Error fetching M3U8 URL:", error);
-      toast({
-        title: "Request failed",
-        description: "Failed to fetch the M3U8 URL from the API",
-        variant: "destructive",
-      });
+      console.error("Error fetching direct URL:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Copy URL to clipboard
+  // Copy the URL to clipboard
   const copyToClipboard = async () => {
     if (!m3u8Url) {
       toast({
-        title: "No URL to copy",
-        description: "Please fetch the M3U8 URL first",
+        title: "No URL available",
+        description: "Please enter credentials in the Code Generator section first",
         variant: "destructive",
       });
       return;
     }
-
+    
     try {
       await navigator.clipboard.writeText(m3u8Url);
       setIsCopied(true);
@@ -90,35 +107,13 @@ export default function DirectM3U8Extractor() {
       
       toast({
         title: "URL copied",
-        description: "The M3U8 URL has been copied to your clipboard",
+        description: "Stream URL copied to clipboard",
       });
     } catch (error) {
-      console.error("Error copying to clipboard:", error);
+      console.error("Failed to copy:", error);
       toast({
         title: "Copy failed",
-        description: "Failed to copy URL to clipboard",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Use File ID and API Key from Code Generator if available
-  const useFromCodeGenerator = () => {
-    const fileIdInput = document.getElementById("fileId") as HTMLInputElement;
-    const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
-    
-    if (fileIdInput && apiKeyInput) {
-      setFileId(fileIdInput.value);
-      setApiKey(apiKeyInput.value);
-      
-      toast({
-        title: "Values imported",
-        description: "File ID and API Key imported from Code Generator",
-      });
-    } else {
-      toast({
-        title: "Import failed",
-        description: "Could not find values from Code Generator",
+        description: "Please try again or copy manually",
         variant: "destructive",
       });
     }
@@ -127,59 +122,21 @@ export default function DirectM3U8Extractor() {
   return (
     <Card className="bg-white rounded-xl shadow-md overflow-hidden">
       <div className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Direct M3U8 URL Extractor</h2>
+        <h2 className="text-xl font-semibold mb-4">Direct Stream URL</h2>
         
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-3 md:col-span-1">
-              <Input
-                value={fileId}
-                onChange={(e) => setFileId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                placeholder="File ID"
-              />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <svg className="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="ml-2 text-gray-600">Getting direct URL...</span>
             </div>
-            <div className="col-span-3 md:col-span-1">
-              <Input
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                placeholder="API Key"
-              />
-            </div>
-            <div className="col-span-3 md:col-span-1">
-              <Button
-                onClick={useFromCodeGenerator}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-md transition duration-200 flex items-center justify-center"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                <span>Use from Generator</span>
-              </Button>
-            </div>
-          </div>
-          
-          <Button 
-            onClick={fetchM3U8Url}
-            className="w-full bg-primary hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-md transition duration-200"
-            disabled={isLoading || !fileId.trim() || !apiKey.trim()}
-          >
-            {isLoading ? (
-              <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Fetching M3U8 URL...
-              </span>
-            ) : (
-              <span>Get Direct M3U8 URL</span>
-            )}
-          </Button>
-          
-          {m3u8Url && (
-            <div className="mt-2">
+          ) : m3u8Url ? (
+            <div>
               <div className="flex justify-between items-center mb-2">
-                <h3 className="font-medium text-gray-700">Direct M3U8 URL:</h3>
+                <h3 className="font-medium text-gray-700">Direct Stream URL:</h3>
                 <Button
                   onClick={copyToClipboard}
                   variant="ghost"
@@ -216,13 +173,12 @@ export default function DirectM3U8Extractor() {
                 </a>
               </div>
             </div>
+          ) : (
+            <div className="text-center py-6 text-gray-500">
+              <p>Enter credentials in the Code Generator</p>
+              <p className="text-sm mt-1">The URL will appear here automatically</p>
+            </div>
           )}
-          
-          <div className="bg-gray-50 p-3 rounded-md text-xs border border-gray-200 mt-2">
-            <p className="text-gray-600">
-              This tool directly extracts the M3U8 URL without requiring console access. Enter your credentials and click the button to get the direct streaming URL.
-            </p>
-          </div>
         </div>
       </div>
     </Card>
