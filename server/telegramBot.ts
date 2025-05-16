@@ -254,6 +254,11 @@ export class UserTelegramBot extends TelegramBot {
         return { url: null, error: "Error code 10: This content is not currently available. The file might be restricted or doesn't exist on the streaming service." };
       }
       
+      // Handle rate limiting errors
+      if (responseText.includes("Too many requests")) {
+        return { url: null, error: "The extraction service is temporarily unavailable due to rate limiting. Please try again in a few minutes." };
+      }
+      
       // Handle other types of responses
       if (data && !data.success && data.error) {
         return { url: null, error: `API error: ${data.error}` };
@@ -314,19 +319,32 @@ export class UserTelegramBot extends TelegramBot {
           return;
         }
         
-        // Try different approaches for the extraction service
+        // Try different approaches for the extraction service with rate limiting protection
+        
+        // Helper function to add delay 
+        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
         
         // First attempt: Try direct IMDB ID as fileId
         let result = await this.attemptExtraction(extractionUrl, imdbId);
         
-        // Second attempt: Try with a tilde prefix (some services use this format)
-        if (!result.url) {
+        // Check if we got rate limited on first attempt
+        if (result.error && result.error.includes("rate limiting")) {
+          this.bot?.sendMessage(chatId, 
+            `⚠️ The extraction service is rate limited. Waiting for 5 seconds before trying again...`
+          );
+          await delay(5000);
+        }
+        
+        // Check if we have a URL already, or if we should try next format
+        if (!result.url && !(result.error && result.error.includes("rate limiting"))) {
+          await delay(1000); // Add small delay between requests
           const fileIdWithTilde = `~${imdbId}`;
           result = await this.attemptExtraction(extractionUrl, fileIdWithTilde);
         }
         
-        // Third attempt: Try with standard placeholder format
-        if (!result.url) {
+        // Check if we have a URL already, or if we should try next format
+        if (!result.url && !(result.error && result.error.includes("rate limiting"))) {
+          await delay(1000); // Add small delay between requests
           const fileIdPlaceholder = `~${imdbId.replace('tt', '')}`;
           result = await this.attemptExtraction(extractionUrl, fileIdPlaceholder);
         }
