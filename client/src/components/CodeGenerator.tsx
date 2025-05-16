@@ -17,7 +17,16 @@ export default function CodeGenerator() {
  key: 'rcbeUV3KoCw-dSFJ-vN$-JwI4OXlCmOaAx05HkWyclbx46SNcazmpYmnFTXoNjo' }
 )}) 
  .then(response => response.json()) 
- .then(data =>  console.log(data)) 
+ .then(data => {
+   console.log(data);
+   // Auto-extract direct URL
+   if (data.success && data.data && data.data.link) {
+     console.log('Direct URL:', data.data.link);
+     navigator.clipboard.writeText(data.data.link)
+       .then(() => console.log('✓ Direct URL copied to clipboard!'))
+       .catch(err => console.error('Failed to copy URL:', err));
+   }
+ }) 
  .catch(error =>  console.error(error));`;
   
   const initialFileId = '~8i-Mu-WONoEdJ9whQe+Ldow...';
