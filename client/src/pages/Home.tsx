@@ -1,5 +1,6 @@
 import CodeGenerator from "@/components/CodeGenerator";
 import MediaInfoSearch from "@/components/MediaInfoSearch";
+import ResponseUrlExtractor from "@/components/ResponseUrlExtractor";
 
 export default function Home() {
   return (
@@ -14,6 +15,8 @@ export default function Home() {
           <MediaInfoSearch />
           
           <CodeGenerator />
+          
+          <ResponseUrlExtractor />
         </div>
         
         <footer className="mt-8 text-center text-sm text-gray-500">
