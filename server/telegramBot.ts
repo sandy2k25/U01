@@ -209,7 +209,7 @@ export class UserTelegramBot extends TelegramBot {
   }
   
   // Helper method to attempt extraction with different fileId formats
-  private async attemptExtraction(extractionUrl: string, fileId: string): Promise<string | null> {
+  private async attemptExtraction(extractionUrl: string, fileId: string): Promise<{ url: string | null; error?: string }> {
     try {
       // Use a consistent API key for all user requests
       const apiKey = process.env.EXTRACTION_API_KEY || 
@@ -228,23 +228,40 @@ export class UserTelegramBot extends TelegramBot {
         })
       });
       
-      if (!response.ok) {
-        console.log(`Extraction attempt failed with status: ${response.status}`);
-        return null;
+      // Get raw text first to see exactly what's being returned
+      const responseText = await response.text();
+      console.log(`Raw extraction response for ${fileId}:`, responseText);
+      
+      // Try to parse the response as JSON
+      let data: any;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.log(`Response is not valid JSON: ${responseText}`);
+        return { url: null, error: `Invalid response: ${responseText}` };
       }
       
-      const data = await response.json() as any;
-      console.log(`Extraction response:`, data);
+      console.log(`Parsed extraction response:`, data);
       
-      // Check if the API request was successful
+      // Check if the API request was successful and has the expected format
       if (data && data.success && data.data && data.data.link) {
-        return data.data.link;
+        return { url: data.data.link };
       }
       
-      return null;
+      // Handle the case where data is just a numeric error code
+      if (responseText === "10" || data === 10) {
+        return { url: null, error: "Error code 10: Invalid file ID or no content available" };
+      }
+      
+      // Handle other types of responses
+      if (data && !data.success && data.error) {
+        return { url: null, error: `API error: ${data.error}` };
+      }
+      
+      return { url: null, error: "Unknown response format from extraction service" };
     } catch (error) {
       console.error(`Error in extraction attempt with fileId ${fileId}:`, error);
-      return null;
+      return { url: null, error: `Extraction error: ${error instanceof Error ? error.message : String(error)}` };
     }
   }
 
@@ -299,31 +316,33 @@ export class UserTelegramBot extends TelegramBot {
         // Try different approaches for the extraction service
         
         // First attempt: Try direct IMDB ID as fileId
-        let streamUrl = await this.attemptExtraction(extractionUrl, imdbId);
+        let result = await this.attemptExtraction(extractionUrl, imdbId);
         
         // Second attempt: Try with a tilde prefix (some services use this format)
-        if (!streamUrl) {
+        if (!result.url) {
           const fileIdWithTilde = `~${imdbId}`;
-          streamUrl = await this.attemptExtraction(extractionUrl, fileIdWithTilde);
+          result = await this.attemptExtraction(extractionUrl, fileIdWithTilde);
         }
         
         // Third attempt: Try with standard placeholder format
-        if (!streamUrl) {
-          const fileIdPlaceholder = `~8i-Mu-WONoEdJ9whQe+Ldow...`;
-          streamUrl = await this.attemptExtraction(extractionUrl, fileIdPlaceholder);
+        if (!result.url) {
+          const fileIdPlaceholder = `~${imdbId.replace('tt', '')}`;
+          result = await this.attemptExtraction(extractionUrl, fileIdPlaceholder);
         }
         
-        if (streamUrl) {
+        if (result.url) {
           // Success - send the stream URL
           this.bot?.sendMessage(
             chatId, 
-            `✅ Found stream URL for ${imdbId}:\n\n${streamUrl}`
+            `✅ Found stream URL for ${imdbId}:\n\n${result.url}`
           );
         } else {
           // All attempts failed
+          const errorMessage = result.error || 'No specific error information available';
+          
           this.bot?.sendMessage(
             chatId,
-            `❌ Could not find stream URL for ${imdbId}. Please try another IMDB ID.`
+            `❌ Could not find stream URL for ${imdbId}.\n\nError: ${errorMessage}\n\nPlease try another IMDB ID.`
           );
         }
       } catch (error) {
