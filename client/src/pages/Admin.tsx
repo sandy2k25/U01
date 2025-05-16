@@ -206,13 +206,15 @@ export default function AdminSettings() {
                 <Label htmlFor="apiKey">Admin API Key</Label>
                 <Input
                   id="apiKey"
-                  type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder="Enter your admin API key"
                   className="mt-1"
                   required
                 />
+                <p className="text-sm text-gray-500 mt-1">
+                  Default key for testing: <code className="bg-gray-100 px-1 py-0.5 rounded">admin-key-123</code>
+                </p>
               </div>
               <Button type="submit" className="w-full">
                 Authenticate

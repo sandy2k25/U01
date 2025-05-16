@@ -91,13 +91,11 @@ export default function DirectM3U8Extractor() {
         const directUrl = data.data.link;
         setM3U8Url(directUrl);
         
-        await navigator.clipboard.writeText(directUrl);
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
+        // Removed automatic clipboard copy here
         
         toast({
           title: "Direct URL ready",
-          description: "Stream URL extracted and copied to clipboard",
+          description: "Stream URL extracted successfully",
         });
       } else {
         // Clear any previous URL when extraction fails
