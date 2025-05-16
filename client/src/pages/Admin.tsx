@@ -13,8 +13,12 @@ import { apiRequest } from "@/lib/queryClient";
 export default function AdminSettings() {
   const [apiKey, setApiKey] = useState("");
   const [extractionUrl, setExtractionUrl] = useState("");
+  // Admin bot state
   const [botToken, setBotToken] = useState("");
   const [botEnabled, setBotEnabled] = useState(false);
+  // User bot state
+  const [userBotToken, setUserBotToken] = useState("");
+  const [userBotEnabled, setUserBotEnabled] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -74,15 +78,26 @@ export default function AdminSettings() {
           setExtractionUrl(extractionUrlConfig.value);
         }
         
-        // Find Telegram bot settings
-        const botEnabledConfig = configs.find((c: any) => c.key === "telegramBotEnabled");
-        if (botEnabledConfig) {
-          setBotEnabled(botEnabledConfig.value === "true");
+        // Find Admin bot settings
+        const adminBotEnabledConfig = configs.find((c: any) => c.key === "adminBotEnabled");
+        if (adminBotEnabledConfig) {
+          setBotEnabled(adminBotEnabledConfig.value === "true");
         }
         
-        const botTokenConfig = configs.find((c: any) => c.key === "telegramBotToken");
-        if (botTokenConfig) {
-          setBotToken(botTokenConfig.value);
+        const adminBotTokenConfig = configs.find((c: any) => c.key === "adminBotToken");
+        if (adminBotTokenConfig) {
+          setBotToken(adminBotTokenConfig.value);
+        }
+        
+        // Find User bot settings
+        const userBotEnabledConfig = configs.find((c: any) => c.key === "userBotEnabled");
+        if (userBotEnabledConfig) {
+          setUserBotEnabled(userBotEnabledConfig.value === "true");
+        }
+        
+        const userBotTokenConfig = configs.find((c: any) => c.key === "userBotToken");
+        if (userBotTokenConfig) {
+          setUserBotToken(userBotTokenConfig.value);
         }
       }
     } catch (error) {
@@ -262,33 +277,67 @@ export default function AdminSettings() {
             </form>
           </Card>
           
-          {/* Telegram Bot Settings */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Telegram Bot Settings</h2>
-            <form onSubmit={handleTelegramSettingsUpdate}>
+          {/* Admin Telegram Bot Settings */}
+          <Card className="p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">Admin Telegram Bot</h2>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              // Update admin bot settings
+              fetch("/api/admin/config/admin-bot", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-api-key": apiKey
+                },
+                body: JSON.stringify({
+                  enabled: botEnabled,
+                  token: botToken
+                })
+              })
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error("Failed to update admin bot settings");
+                }
+                return response.json();
+              })
+              .then(() => {
+                toast({
+                  title: "Admin Bot Updated",
+                  description: `Admin Telegram bot has been ${botEnabled ? "enabled" : "disabled"}`
+                });
+              })
+              .catch(error => {
+                console.error("Error updating admin bot settings:", error);
+                toast({
+                  title: "Update Failed",
+                  description: "Failed to update admin bot settings",
+                  variant: "destructive"
+                });
+              });
+            }}>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="botEnabled">Enable Telegram Bot</Label>
+                    <Label htmlFor="adminBotEnabled">Enable Admin Bot</Label>
                     <p className="text-sm text-gray-500">
-                      Allow extraction URL changes via Telegram
+                      Controls extraction URL via Telegram
                     </p>
                   </div>
                   <Switch
-                    id="botEnabled"
+                    id="adminBotEnabled"
                     checked={botEnabled}
                     onCheckedChange={setBotEnabled}
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="botToken">Telegram Bot Token</Label>
+                  <Label htmlFor="adminBotToken">Admin Bot Token</Label>
                   <Input
-                    id="botToken"
+                    id="adminBotToken"
                     type="password"
                     value={botToken}
                     onChange={(e) => setBotToken(e.target.value)}
-                    placeholder="Enter your Telegram bot token"
+                    placeholder="Enter your admin Telegram bot token"
                     className="mt-1"
                     required={botEnabled}
                   />
@@ -299,17 +348,93 @@ export default function AdminSettings() {
                 
                 <Button 
                   type="submit" 
-                  disabled={updateTelegramSettings.isPending}
                   className="flex items-center"
                 >
-                  {updateTelegramSettings.isPending ? (
-                    <span>Updating...</span>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      Save Bot Settings
-                    </>
-                  )}
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Admin Bot
+                </Button>
+              </div>
+            </form>
+          </Card>
+          
+          {/* User Telegram Bot Settings */}
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">User Telegram Bot</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              This bot allows users to get direct stream URLs by sending IMDB IDs
+            </p>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              // Update user bot settings
+              fetch("/api/admin/config/user-bot", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-api-key": apiKey
+                },
+                body: JSON.stringify({
+                  enabled: userBotEnabled,
+                  token: userBotToken
+                })
+              })
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error("Failed to update user bot settings");
+                }
+                return response.json();
+              })
+              .then(() => {
+                toast({
+                  title: "User Bot Updated",
+                  description: `User Telegram bot has been ${userBotEnabled ? "enabled" : "disabled"}`
+                });
+              })
+              .catch(error => {
+                console.error("Error updating user bot settings:", error);
+                toast({
+                  title: "Update Failed",
+                  description: "Failed to update user bot settings",
+                  variant: "destructive"
+                });
+              });
+            }}>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="userBotEnabled">Enable User Bot</Label>
+                    <p className="text-sm text-gray-500">
+                      Let users extract URLs with IMDB IDs
+                    </p>
+                  </div>
+                  <Switch
+                    id="userBotEnabled"
+                    checked={userBotEnabled}
+                    onCheckedChange={setUserBotEnabled}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="userBotToken">User Bot Token</Label>
+                  <Input
+                    id="userBotToken"
+                    type="password"
+                    value={userBotToken}
+                    onChange={(e) => setUserBotToken(e.target.value)}
+                    placeholder="Enter your user Telegram bot token"
+                    className="mt-1"
+                    required={userBotEnabled}
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Create a different bot with @BotFather for user interactions
+                  </p>
+                </div>
+                
+                <Button 
+                  type="submit"
+                  className="flex items-center"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save User Bot
                 </Button>
               </div>
             </form>

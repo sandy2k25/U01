@@ -2,11 +2,14 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import fetch from "node-fetch";
-import type { TelegramBot } from "./telegramBot"; // Import as type only first
+import { AdminTelegramBot, UserTelegramBot } from "./telegramBot";
 
-// Simple in-memory authentication
+// Simple in-memory authentication (moved to environment variable)
 const API_KEY = process.env.ADMIN_API_KEY || "admin-key-123"; // Default key for development
-let telegramBot: TelegramBot | null = null;
+
+// Telegram bot instances
+let adminTelegramBot: AdminTelegramBot | null = null;
+let userTelegramBot: UserTelegramBot | null = null;
 
 // Middleware to authenticate admin API requests
 const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
@@ -139,8 +142,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Update Telegram bot settings (admin only)
-  app.post("/api/admin/config/telegram", authenticateAdmin, async (req: Request, res: Response) => {
+  // Update Admin Telegram bot settings (admin only)
+  app.post("/api/admin/config/admin-bot", authenticateAdmin, async (req: Request, res: Response) => {
     try {
       const { enabled, token } = req.body;
       
@@ -152,47 +155,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Update bot status
-      await storage.setConfig("telegramBotEnabled", enabled.toString());
+      await storage.setConfig("adminBotEnabled", enabled.toString());
       
       // Update token if provided
       if (token !== undefined) {
-        await storage.setConfig("telegramBotToken", token);
+        await storage.setConfig("adminBotToken", token);
       }
       
-      // Start or stop the Telegram bot based on settings
+      // Start or stop the Admin Telegram bot based on settings
       if (enabled) {
-        const botToken = token || await storage.getConfigByKey("telegramBotToken");
+        // Use token from request, environment variable, or storage
+        const botToken = token || process.env.ADMIN_BOT_TOKEN || await storage.getConfigByKey("adminBotToken");
         
         if (!botToken) {
           return res.status(400).json({
             success: false,
-            error: "Bot token is required when enabling the bot"
+            error: "Admin bot token is required when enabling the bot"
           });
         }
         
-        // Stop existing bot if it's running
-        if (telegramBot) {
-          telegramBot.stop();
+        // Stop existing admin bot if it's running
+        if (adminTelegramBot) {
+          adminTelegramBot.stop();
         }
         
-        // Start new bot with the updated token
-        telegramBot = new TelegramBot(botToken, storage);
-        telegramBot.start();
-      } else if (telegramBot) {
-        // Stop the bot if it's running
-        telegramBot.stop();
-        telegramBot = null;
+        // Start new admin bot with the updated token
+        adminTelegramBot = new AdminTelegramBot(botToken, storage);
+        adminTelegramBot.start();
+      } else if (adminTelegramBot) {
+        // Stop the admin bot if it's running
+        adminTelegramBot.stop();
+        adminTelegramBot = null;
       }
       
       res.json({
         success: true,
-        message: "Telegram bot settings updated successfully"
+        message: "Admin Telegram bot settings updated successfully"
       });
     } catch (error) {
-      console.error("Error updating Telegram bot settings:", error);
+      console.error("Error updating Admin Telegram bot settings:", error);
       res.status(500).json({
         success: false,
-        error: "Failed to update Telegram bot settings"
+        error: "Failed to update Admin Telegram bot settings"
+      });
+    }
+  });
+  
+  // Update User Telegram bot settings (admin only)
+  app.post("/api/admin/config/user-bot", authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+      const { enabled, token } = req.body;
+      
+      if (enabled === undefined) {
+        return res.status(400).json({
+          success: false,
+          error: "Enabled status is required"
+        });
+      }
+      
+      // Update bot status
+      await storage.setConfig("userBotEnabled", enabled.toString());
+      
+      // Update token if provided
+      if (token !== undefined) {
+        await storage.setConfig("userBotToken", token);
+      }
+      
+      // Start or stop the User Telegram bot based on settings
+      if (enabled) {
+        // Use token from request, environment variable, or storage
+        const botToken = token || process.env.USER_BOT_TOKEN || await storage.getConfigByKey("userBotToken");
+        
+        if (!botToken) {
+          return res.status(400).json({
+            success: false,
+            error: "User bot token is required when enabling the bot"
+          });
+        }
+        
+        // Stop existing user bot if it's running
+        if (userTelegramBot) {
+          userTelegramBot.stop();
+        }
+        
+        // Start new user bot with the updated token
+        userTelegramBot = new UserTelegramBot(botToken, storage);
+        userTelegramBot.start();
+      } else if (userTelegramBot) {
+        // Stop the user bot if it's running
+        userTelegramBot.stop();
+        userTelegramBot = null;
+      }
+      
+      res.json({
+        success: true,
+        message: "User Telegram bot settings updated successfully"
+      });
+    } catch (error) {
+      console.error("Error updating User Telegram bot settings:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to update User Telegram bot settings"
       });
     }
   });
@@ -202,18 +265,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
-  // Initialize Telegram bot if enabled
+  // Initialize Admin Telegram bot if enabled
   try {
-    const botEnabled = await storage.getConfigByKey("telegramBotEnabled");
-    const botToken = await storage.getConfigByKey("telegramBotToken");
+    const adminBotEnabled = await storage.getConfigByKey("adminBotEnabled");
+    const adminBotToken = process.env.ADMIN_BOT_TOKEN || await storage.getConfigByKey("adminBotToken");
     
-    if (botEnabled === "true" && botToken) {
-      telegramBot = new TelegramBot(botToken, storage);
-      telegramBot.start();
-      console.log("Telegram bot started");
+    if (adminBotEnabled === "true" && adminBotToken) {
+      adminTelegramBot = new AdminTelegramBot(adminBotToken, storage);
+      adminTelegramBot.start();
+      console.log("Admin Telegram bot started");
     }
   } catch (error) {
-    console.error("Failed to initialize Telegram bot:", error);
+    console.error("Failed to initialize Admin Telegram bot:", error);
+  }
+  
+  // Initialize User Telegram bot if enabled
+  try {
+    const userBotEnabled = await storage.getConfigByKey("userBotEnabled");
+    const userBotToken = process.env.USER_BOT_TOKEN || await storage.getConfigByKey("userBotToken");
+    
+    if (userBotEnabled === "true" && userBotToken) {
+      userTelegramBot = new UserTelegramBot(userBotToken, storage);
+      userTelegramBot.start();
+      console.log("User Telegram bot started");
+    }
+  } catch (error) {
+    console.error("Failed to initialize User Telegram bot:", error);
   }
 
   return httpServer;
