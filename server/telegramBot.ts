@@ -232,6 +232,11 @@ export class UserTelegramBot extends TelegramBot {
       const responseText = await response.text();
       console.log(`Raw extraction response for ${fileId}:`, responseText);
       
+      // Handle rate limiting errors first (these are often not JSON)
+      if (responseText.includes("Too many requests")) {
+        return { url: null, error: "The extraction service is temporarily unavailable due to rate limiting. Please try again in a few minutes." };
+      }
+      
       // Try to parse the response as JSON
       let data: any;
       try {
@@ -243,30 +248,19 @@ export class UserTelegramBot extends TelegramBot {
       
       console.log(`Parsed extraction response:`, data);
       
-      // Check if the API request was successful and has a link
+      // The most important check: if data has a numeric link of 10, treat as no content available
+      if (data && data.success && data.data && data.data.link === 10) {
+        return { url: null, error: "Content not available: This movie or show isn't currently available in the streaming service." };
+      }
+      
+      // If it has any other valid link, return it as a string
       if (data && data.success && data.data && data.data.link) {
-        // If link is a string, return it directly
-        if (typeof data.data.link === 'string') {
-          return { url: data.data.link };
-        }
-        // If link is a number, convert it to string - website treats all values as valid
-        else if (typeof data.data.link === 'number') {
-          // Convert the number to a string and return it
-          return { url: data.data.link.toString() };
-        }
+        const linkValue = data.data.link;
+        // Handle both string and numeric links by converting to string
+        return { url: linkValue.toString() };
       }
       
-      // Only treat it as error code if explicitly failing
-      if (responseText === "10" || data === 10) {
-        return { url: null, error: "Error code 10: This content is not currently available." };
-      }
-      
-      // Handle rate limiting errors
-      if (responseText.includes("Too many requests")) {
-        return { url: null, error: "The extraction service is temporarily unavailable due to rate limiting. Please try again in a few minutes." };
-      }
-      
-      // Handle other types of responses
+      // Handle other error cases
       if (data && !data.success && data.error) {
         return { url: null, error: `API error: ${data.error}` };
       }
