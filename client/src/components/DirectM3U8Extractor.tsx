@@ -11,8 +11,14 @@ export default function DirectM3U8Extractor() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // Define type for extraction URL API response
+  interface ExtractionUrlResponse {
+    success: boolean;
+    url: string;
+  }
+
   // Fetch the current extraction URL from the server
-  const { data: extractionUrlData } = useQuery({
+  const { data: extractionUrlData } = useQuery<ExtractionUrlResponse>({
     queryKey: ['/api/config/extraction-url'],
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -67,7 +73,10 @@ export default function DirectM3U8Extractor() {
     setIsLoading(true);
     
     try {
-      const response = await fetch(extractionUrl, {
+      // Make sure extractionUrl is a string
+      const apiUrl = typeof extractionUrl === 'string' ? extractionUrl : 'https://oplij.koyeb.app/api/v1/getStream';
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
