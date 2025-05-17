@@ -26,6 +26,294 @@ const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Secure Player endpoint for encrypted streams
+  app.get("/secure-player", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token) {
+        return res.status(400).send(`
+          <html>
+            <head>
+              <title>Error - WovIeX Secure Player</title>
+              <style>
+                body { 
+                  font-family: Arial, sans-serif; 
+                  display: flex; 
+                  justify-content: center; 
+                  align-items: center; 
+                  height: 100vh; 
+                  margin: 0; 
+                  background-color: #000;
+                  color: white;
+                  text-align: center;
+                }
+                .error-container {
+                  max-width: 90%;
+                  padding: 20px;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="error-container">
+                <h2>Error: Missing Stream Token</h2>
+                <p>The secure stream URL is invalid or has expired.</p>
+              </div>
+            </body>
+          </html>
+        `);
+      }
+      
+      try {
+        // Decode the token (which is base64 encoded)
+        const streamUrl = Buffer.from(token as string, 'base64').toString('utf-8');
+        
+        // Send an HTML5 video player with enhanced features that uses the decoded URL
+        res.send(`
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>WovIeX Secure Player</title>
+            <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body { 
+                background-color: #000; 
+                font-family: Arial, sans-serif;
+                overflow: hidden;
+                width: 100vw;
+                height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+              .container {
+                width: 100%;
+                max-width: 1200px;
+                padding: 0;
+                position: relative;
+                aspect-ratio: 16/9;
+              }
+              .plyr {
+                height: 100%;
+                width: 100%;
+                border-radius: 6px;
+                overflow: hidden;
+              }
+              .plyr--full-ui input[type=range] {
+                color: #3b82f6;
+              }
+              .plyr__control--overlaid {
+                background: rgba(59, 130, 246, 0.8);
+              }
+              .plyr--video .plyr__control.plyr__tab-focus,
+              .plyr--video .plyr__control:hover,
+              .plyr--video .plyr__control[aria-expanded=true] {
+                background: #3b82f6;
+              }
+              .plyr__control.plyr__tab-focus {
+                box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.5);
+              }
+              .plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::before {
+                background: #3b82f6;
+              }
+              .loading {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                font-size: 16px;
+                z-index: 1;
+                background: rgba(0,0,0,0.7);
+                padding: 15px 25px;
+                border-radius: 4px;
+                transition: opacity 0.3s ease;
+              }
+              .watermark {
+                position: absolute;
+                bottom: 60px;
+                right: 15px;
+                font-size: 14px;
+                padding: 5px 10px;
+                background: rgba(0,0,0,0.5);
+                color: rgba(255,255,255,0.7);
+                border-radius: 3px;
+                z-index: 2;
+                pointer-events: none;
+                user-select: none;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div id="loading" class="loading">Loading secure stream...</div>
+              <div class="watermark">WovIeX Player</div>
+              <video id="player" crossorigin playsinline controls></video>
+            </div>
+            
+            <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+            
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                const source = '${streamUrl}';
+                const video = document.getElementById('player');
+                const loading = document.getElementById('loading');
+                
+                // For more options see: https://github.com/sampotts/plyr/#options
+                const defaultOptions = {
+                  speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+                  quality: { default: 'auto' },
+                  controls: [
+                    'play-large', 'play', 'progress', 'current-time', 'mute',
+                    'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'
+                  ],
+                  seekTime: 10,
+                  keyboard: { focused: true, global: false },
+                  tooltips: { controls: true, seek: true },
+                  i18n: {
+                    restart: 'Restart',
+                    rewind: 'Rewind {seektime}s',
+                    play: 'Play',
+                    pause: 'Pause',
+                    fastForward: 'Forward {seektime}s',
+                    seek: 'Seek',
+                    played: 'Played',
+                    buffered: 'Buffered',
+                    currentTime: 'Current time',
+                    duration: 'Duration',
+                    volume: 'Volume',
+                    mute: 'Mute',
+                    unmute: 'Unmute',
+                    settings: 'Settings',
+                    pip: 'PIP',
+                    enterFullscreen: 'Enter fullscreen',
+                    exitFullscreen: 'Exit fullscreen',
+                    speed: 'Speed',
+                    normal: 'Normal',
+                    quality: 'Quality',
+                    loop: 'Loop'
+                  }
+                };
+
+                // If HLS.js is supported
+                if (Hls.isSupported()) {
+                  const hls = new Hls();
+                  hls.loadSource(source);
+                  hls.attachMedia(video);
+                  
+                  // From the m3u8 playlist, try to detect if quality options are available
+                  hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+                    loading.style.opacity = '0';
+                    setTimeout(() => {
+                      loading.style.display = 'none';
+                    }, 300);
+                    
+                    // Initialize player
+                    const player = new Plyr(video, defaultOptions);
+                    
+                    // Quality switching for HLS
+                    if (data.levels.length > 1) {
+                      const qualities = data.levels.map((level, index) => {
+                        return { label: level.height + 'p', value: index };
+                      });
+                      
+                      qualities.unshift({
+                        label: 'Auto',
+                        value: 'auto'
+                      });
+                      
+                      // Update the quality options in the player
+                      player.config.quality = {
+                        options: qualities.map(q => q.value),
+                        forced: true,
+                        onChange: (quality) => {
+                          if (quality === 'auto') {
+                            hls.currentLevel = -1;
+                          } else {
+                            hls.currentLevel = quality;
+                          }
+                        }
+                      };
+                      
+                      // Set quality in player
+                      player.quality = 'auto';
+                    }
+                    
+                    // Handle errors
+                    hls.on(Hls.Events.ERROR, function(event, data) {
+                      loading.textContent = 'Error loading stream. The URL may be invalid or expired.';
+                      loading.style.opacity = '1';
+                      loading.style.display = 'block';
+                      console.error('HLS error:', data);
+                    });
+                  });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                  // Native HLS support (Safari)
+                  video.src = source;
+                  const player = new Plyr(video, defaultOptions);
+                  
+                  video.addEventListener('loadedmetadata', function() {
+                    loading.style.opacity = '0';
+                    setTimeout(() => {
+                      loading.style.display = 'none';
+                    }, 300);
+                  });
+                  
+                  video.addEventListener('error', function() {
+                    loading.textContent = 'Error loading stream. The URL may be invalid or expired.';
+                    loading.style.opacity = '1';
+                    loading.style.display = 'block';
+                  });
+                } else {
+                  loading.textContent = 'Your browser does not support HLS playback.';
+                }
+              });
+            </script>
+          </body>
+          </html>
+        `);
+      } catch (error) {
+        console.error("Error decoding secure player token:", error);
+        return res.status(400).send(`
+          <html>
+            <head>
+              <title>Error - WovIeX Secure Player</title>
+              <style>
+                body { 
+                  font-family: Arial, sans-serif; 
+                  display: flex; 
+                  justify-content: center; 
+                  align-items: center; 
+                  height: 100vh; 
+                  margin: 0; 
+                  background-color: #000;
+                  color: white;
+                  text-align: center;
+                }
+                .error-container {
+                  max-width: 90%;
+                  padding: 20px;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="error-container">
+                <h2>Error: Invalid Stream Token</h2>
+                <p>The secure stream URL is invalid or has expired.</p>
+              </div>
+            </body>
+          </html>
+        `);
+      }
+    } catch (error) {
+      console.error("Error serving secure player:", error);
+      res.status(500).send("Internal Server Error");
+    }
+  });
   // Search files by title
   app.get("/api/search-files", async (req: Request, res: Response) => {
     try {

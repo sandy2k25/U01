@@ -739,17 +739,31 @@ export default function DirectM3U8Extractor() {
                             allowFullScreen
                           ></iframe>
                         </div>
-                        <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-between">
-                          <span className="text-sm text-gray-600">Stream source is safely encrypted</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => window.open(encryptedUrl, '_blank')}
-                          >
-                            <ExternalLink className="h-4 w-4 mr-1" />
-                            Open in New Tab
-                          </Button>
+                        <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                          <div className="flex items-center">
+                            <span className="inline-flex h-2 w-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                            <span className="text-sm text-gray-600">Stream source protected</span>
+                          </div>
+                          <div className="space-x-2 flex">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => navigator.clipboard.writeText(encryptedUrl)}
+                            >
+                              <Clipboard className="h-4 w-4 mr-1" />
+                              Copy Link
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => window.open(encryptedUrl, '_blank')}
+                            >
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              Open in New Tab
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
