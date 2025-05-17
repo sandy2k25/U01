@@ -536,11 +536,11 @@ export default function MediaInfoSearch() {
                   </div>
                   <div className="grid grid-cols-4 gap-2">
                     <span className="text-gray-600 font-medium">File ID:</span>
-                    <span className="col-span-3 text-sm font-mono bg-gray-100 p-1 rounded truncate">{mediaInfo.file}</span>
+                    <span className="col-span-3 text-sm font-mono bg-gray-100 p-1 rounded truncate blur-sm hover:blur-[2px] focus:blur-0">{mediaInfo.file}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-2">
                     <span className="text-gray-600 font-medium">API Key:</span>
-                    <span className="col-span-3 text-sm font-mono bg-gray-100 p-1 rounded truncate">{mediaInfo.key}</span>
+                    <span className="col-span-3 text-sm font-mono bg-gray-100 p-1 rounded truncate blur-sm hover:blur-[2px] focus:blur-0">{mediaInfo.key}</span>
                   </div>
                   
                   <div className="mt-4 flex justify-end">
