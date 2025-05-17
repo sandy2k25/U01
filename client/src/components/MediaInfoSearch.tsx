@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Loader2, Info, ArrowRight, Check, RefreshCw } from "lucide-react";
+import { Search, Loader2, Info, ArrowRight, Check, RefreshCw, Film } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -37,6 +37,14 @@ interface TmdbSearchResult {
   release_date: string;
 }
 
+interface MovieSearchResult {
+  id: number;
+  title: string;
+  release_date?: string;
+  poster_path?: string;
+  overview?: string;
+}
+
 export default function MediaInfoSearch() {
   const [mediaId, setMediaId] = useState("");
   const [mediaInfo, setMediaInfo] = useState<MediaInfoData | null>(null);
@@ -51,6 +59,12 @@ export default function MediaInfoSearch() {
   const [tmdbSearchResult, setTmdbSearchResult] = useState<TmdbSearchResult | null>(null);
   const [isTmdbLoading, setIsTmdbLoading] = useState(false);
   const [tmdbError, setTmdbError] = useState("");
+  
+  // Movie title search states
+  const [movieSearchQuery, setMovieSearchQuery] = useState("");
+  const [movieSearchResults, setMovieSearchResults] = useState<MovieSearchResult[]>([]);
+  const [isMovieSearchLoading, setIsMovieSearchLoading] = useState(false);
+  const [movieSearchError, setMovieSearchError] = useState("");
   
   const { toast } = useToast();
 
@@ -183,6 +197,88 @@ export default function MediaInfoSearch() {
     }
   };
 
+  // Handle movie title search
+  const handleMovieSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!movieSearchQuery.trim()) {
+      setMovieSearchError("Please enter a movie title to search");
+      return;
+    }
+    
+    setMovieSearchError("");
+    setIsMovieSearchLoading(true);
+    setMovieSearchResults([]);
+    
+    try {
+      // Free public TMDB API endpoint (using query parameter)
+      const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=3e4d2ba9723bf5ae49f4383f067bc35c&query=${encodeURIComponent(movieSearchQuery.trim())}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.results && data.results.length > 0) {
+        setMovieSearchResults(data.results);
+      } else {
+        setMovieSearchError("No movies found matching your search.");
+      }
+    } catch (err) {
+      console.error("Failed to search for movies:", err);
+      setMovieSearchError("Failed to search for movies. Please try again.");
+    } finally {
+      setIsMovieSearchLoading(false);
+    }
+  };
+  
+  // Handle selecting a movie from the search results
+  const handleMovieSelect = async (tmdbId: number) => {
+    setTmdbId(tmdbId.toString());
+    
+    try {
+      setIsTmdbLoading(true);
+      setTmdbError("");
+      setTmdbSearchResult(null);
+      
+      const response = await fetch(`/api/tmdb-to-imdb/${tmdbId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || "Failed to convert TMDB ID");
+      }
+      
+      setTmdbSearchResult(data);
+      
+      // Auto-fill the media ID input with the IMDB ID
+      setMediaId(data.imdbId);
+      
+      toast({
+        title: "TMDB ID Converted",
+        description: `Found "${data.title}" (${data.release_date?.substring(0, 4) || ''}). IMDB ID: ${data.imdbId}`,
+      });
+      
+      // Automatically trigger the media info search
+      const mediaIdForm = document.getElementById("mediaIdForm") as HTMLFormElement;
+      if (mediaIdForm) {
+        mediaIdForm.requestSubmit();
+      }
+      
+    } catch (err) {
+      console.error("Failed to convert TMDB ID:", err);
+      setTmdbError("Failed to convert TMDB ID. Please try again.");
+      setTmdbSearchResult(null);
+    } finally {
+      setIsTmdbLoading(false);
+    }
+  };
+
   // Handle TMDB ID search
   const handleTmdbSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,8 +340,84 @@ export default function MediaInfoSearch() {
         </div>
         
         <div className="space-y-8">
+          {/* Movie Title Search */}
+          <div>
+            <h3 className="text-lg font-medium mb-2 flex items-center">
+              <Film className="h-4 w-4 mr-2" /> 
+              Search for Movies
+            </h3>
+            <form onSubmit={handleMovieSearch} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="movieSearchQuery" className="font-medium text-gray-700">Movie Title</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    id="movieSearchQuery"
+                    value={movieSearchQuery}
+                    onChange={(e) => setMovieSearchQuery(e.target.value)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+                    placeholder="e.g. The Dark Knight"
+                  />
+                  <Button 
+                    type="submit"
+                    className="bg-primary hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition duration-200 flex items-center"
+                    disabled={isMovieSearchLoading}
+                  >
+                    {isMovieSearchLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Search className="h-4 w-4 mr-2" />
+                    )}
+                    Search
+                  </Button>
+                </div>
+                {movieSearchError && (
+                  <p className="text-error text-sm">{movieSearchError}</p>
+                )}
+                
+                {/* Movie Search Results */}
+                {movieSearchResults.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm font-medium text-gray-700">Found {movieSearchResults.length} movies:</p>
+                    <div className="max-h-72 overflow-y-auto pr-2">
+                      {movieSearchResults.map((movie) => (
+                        <div 
+                          key={movie.id} 
+                          className="p-3 bg-gray-50 rounded-md border border-gray-200 mb-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleMovieSelect(movie.id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-gray-800">{movie.title}</p>
+                              {movie.release_date && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Release: {movie.release_date.substring(0, 4)}
+                                </p>
+                              )}
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMovieSelect(movie.id);
+                              }}
+                            >
+                              Select
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </form>
+          </div>
+          
           {/* IMDB ID Search */}
           <div>
+            <Separator className="my-4" />
             <h3 className="text-lg font-medium mb-2 flex items-center">
               <Search className="h-4 w-4 mr-2" /> 
               Search by IMDB ID

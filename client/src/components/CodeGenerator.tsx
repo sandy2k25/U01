@@ -192,13 +192,15 @@ export default function CodeGenerator() {
         <form onSubmit={handleUpdateCode} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="fileId" className="font-medium text-gray-700">File ID</Label>
-            <Input
-              id="fileId"
-              value={fileId}
-              onChange={(e) => setFileId(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="e.g. ~8i-Mu-WONoEdJ9whQe+Ldow..."
-            />
+            <div className="relative">
+              <Input
+                id="fileId"
+                value={fileId}
+                onChange={(e) => setFileId(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-[2px] focus:blur-0"
+                placeholder="e.g. ~8i-Mu-WONoEdJ9whQe+Ldow..."
+              />
+            </div>
             {fileIdError && (
               <p className="text-error text-sm">Please enter a valid File ID</p>
             )}
@@ -206,13 +208,15 @@ export default function CodeGenerator() {
           
           <div className="space-y-2">
             <Label htmlFor="apiKey" className="font-medium text-gray-700">API Key</Label>
-            <Input
-              id="apiKey"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
-              placeholder="e.g. rcbeUV3KoCw-dSFJ-vN$-JwI4OXlCmOaAx05HkWyclbx46SNcazmpYmnFTXoNjo"
-            />
+            <div className="relative">
+              <Input
+                id="apiKey"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-[2px] focus:blur-0"
+                placeholder="e.g. rcbeUV3KoCw-dSFJ-vN$-JwI4OXlCmOaAx05HkWyclbx46SNcazmpYmnFTXoNjo"
+              />
+            </div>
             {apiKeyError && (
               <p className="text-error text-sm">Please enter a valid API Key</p>
             )}
@@ -227,81 +231,17 @@ export default function CodeGenerator() {
         </form>
       </section>
       
-      {/* Code Display Section */}
-      <section className="p-6" ref={codeSectionRef}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Generated Code</h2>
-          <div className="flex items-center space-x-3">
-            {isUpdated && (
-              <span className="text-sm text-gray-500">Code updated</span>
-            )}
-            <div className="flex items-center space-x-2">
-              <Button
-                onClick={() => setIsBlurred(!isBlurred)}
-                variant="outline"
-                className="flex items-center space-x-1 px-2 py-1 rounded-md text-sm font-medium"
-                size="sm"
-              >
-                {isBlurred ? (
-                  <>
-                    <Eye className="h-4 w-4" />
-                    <span>Show</span>
-                  </>
-                ) : (
-                  <>
-                    <EyeOff className="h-4 w-4" />
-                    <span>Hide</span>
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={copyCodeToClipboard}
-                variant={isCopied ? "default" : "secondary"}
-                className={`flex items-center space-x-1 px-2 py-1 rounded-md text-sm font-medium transition duration-200 ${
-                  isCopied ? 'bg-success text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                }`}
-                size="sm"
-              >
-                {isCopied ? (
-                  <>
-                    <Check className="h-4 w-4" />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Clipboard className="h-4 w-4" />
-                    <span>Copy Code</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
+      {/* Hidden Code Display Section - still functional but not visible to users */}
+      <div className="hidden">
+        <div ref={codeSectionRef}>
+          <SyntaxHighlighter
+            language="javascript"
+            style={atomOneDark}
+          >
+            {currentCode}
+          </SyntaxHighlighter>
         </div>
-        
-        <div className="relative rounded-md overflow-hidden">
-          <div className={`transition-all duration-200 ${isBlurred ? 'blur-sm hover:blur-[3px]' : 'blur-0'}`}>
-            <SyntaxHighlighter
-              language="javascript"
-              style={atomOneDark}
-              customStyle={{
-                padding: '1rem',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem',
-                maxHeight: '24rem',
-              }}
-            >
-              {currentCode}
-            </SyntaxHighlighter>
-          </div>
-          {isBlurred && (
-            <div className="absolute inset-0 flex items-center justify-center bg-transparent" onClick={() => setIsBlurred(false)}>
-              <span className="bg-white/90 px-3 py-1.5 rounded-md text-sm font-medium shadow-sm">
-                Click to reveal
-              </span>
-            </div>
-          )}
-        </div>
-      </section>
+      </div>
     </Card>
   );
 }
