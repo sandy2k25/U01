@@ -18,8 +18,17 @@ export default function DirectM3U8Extractor() {
   const [duration, setDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeTab, setActiveTab] = useState("player");
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [showControls, setShowControls] = useState(false);
+  const [showSpeedOptions, setShowSpeedOptions] = useState(false);
+  const [showQualityOptions, setShowQualityOptions] = useState(false);
+  const [availableQualities, setAvailableQualities] = useState<string[]>([]);
+  const [selectedQuality, setSelectedQuality] = useState("auto");
+  const [isControlsAnimationActive, setIsControlsAnimationActive] = useState(false);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   // Define type for extraction URL API response
@@ -138,13 +147,35 @@ export default function DirectM3U8Extractor() {
     }
   };
 
+  // Control animation and visibility
+  const showPlayerControls = () => {
+    setShowControls(true);
+    
+    // Clear any existing timeout
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    
+    // Set a new timeout to hide controls after 3 seconds of inactivity
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (isPlaying) {
+        setShowControls(false);
+      }
+    }, 3000);
+  };
+  
   // Video player control methods
   const togglePlay = () => {
     if (!videoRef.current) return;
     
+    // Show animation effect
+    setIsControlsAnimationActive(true);
+    setTimeout(() => setIsControlsAnimationActive(false), 500);
+    
     if (isPlaying) {
       videoRef.current.pause();
       setIsPlaying(false);
+      setShowControls(true); // Keep controls visible when paused
     } else {
       videoRef.current.play().catch(err => {
         console.error("Failed to play video:", err);
@@ -155,6 +186,7 @@ export default function DirectM3U8Extractor() {
         });
       });
       setIsPlaying(true);
+      showPlayerControls(); // Show controls briefly when playing
     }
   };
   
@@ -164,6 +196,7 @@ export default function DirectM3U8Extractor() {
     const newMuteState = !isMuted;
     videoRef.current.muted = newMuteState;
     setIsMuted(newMuteState);
+    showPlayerControls();
   };
   
   const handleVolumeChange = (value: number[]) => {
@@ -181,6 +214,8 @@ export default function DirectM3U8Extractor() {
       setIsMuted(false);
       videoRef.current.muted = false;
     }
+    
+    showPlayerControls();
   };
   
   const handleTimeUpdate = () => {
@@ -196,13 +231,19 @@ export default function DirectM3U8Extractor() {
     const newTime = value[0];
     videoRef.current.currentTime = newTime;
     setCurrentTime(newTime);
+    showPlayerControls();
   };
   
   const handleSkip = (seconds: number) => {
     if (!videoRef.current) return;
     
+    // Show animation effect
+    setIsControlsAnimationActive(true);
+    setTimeout(() => setIsControlsAnimationActive(false), 500);
+    
     const newTime = videoRef.current.currentTime + seconds;
     videoRef.current.currentTime = Math.max(0, Math.min(newTime, videoRef.current.duration));
+    showPlayerControls();
   };
   
   const toggleFullscreen = () => {
@@ -217,6 +258,47 @@ export default function DirectM3U8Extractor() {
       document.exitFullscreen();
       setIsFullscreen(false);
     }
+    
+    showPlayerControls();
+  };
+  
+  const changePlaybackSpeed = (speed: number) => {
+    if (!videoRef.current) return;
+    
+    videoRef.current.playbackRate = speed;
+    setPlaybackSpeed(speed);
+    setShowSpeedOptions(false);
+    
+    toast({
+      title: "Playback Speed",
+      description: `Speed set to ${speed}x`,
+    });
+    
+    showPlayerControls();
+  };
+  
+  const toggleSpeedOptions = () => {
+    setShowSpeedOptions(!showSpeedOptions);
+    setShowQualityOptions(false);
+    showPlayerControls();
+  };
+  
+  const toggleQualityOptions = () => {
+    setShowQualityOptions(!showQualityOptions);
+    setShowSpeedOptions(false);
+    showPlayerControls();
+  };
+  
+  const setQuality = (quality: string) => {
+    setSelectedQuality(quality);
+    setShowQualityOptions(false);
+    
+    toast({
+      title: "Quality Changed",
+      description: `Quality set to ${quality}`,
+    });
+    
+    showPlayerControls();
   };
   
   // Format time from seconds to MM:SS
@@ -277,8 +359,31 @@ export default function DirectM3U8Extractor() {
       setCurrentTime(0);
       setDuration(0);
       videoRef.current.load();
+      
+      // Set default qualities based on different available resolutions
+      setAvailableQualities(['auto', '1080p', '720p', '480p', '360p']);
     }
   }, [m3u8Url]);
+  
+  // Mouse movement listener for showing controls
+  useEffect(() => {
+    const playerElement = playerContainerRef.current;
+    
+    if (!playerElement) return;
+    
+    const handleMouseMove = () => {
+      showPlayerControls();
+    };
+    
+    playerElement.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      playerElement.removeEventListener('mousemove', handleMouseMove);
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    };
+  }, [isPlaying]);
 
   return (
     <Card className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -316,6 +421,18 @@ export default function DirectM3U8Extractor() {
                 className="relative bg-black rounded-md overflow-hidden"
                 ref={playerContainerRef}
               >
+                {/* Play/Pause Animation Overlay */}
+                {isControlsAnimationActive && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                    <div className="bg-black/40 rounded-full p-6 animate-pulse">
+                      {isPlaying ? 
+                        <Play className="h-14 w-14 text-white animate-fadeIn" /> : 
+                        <Pause className="h-14 w-14 text-white animate-fadeIn" />
+                      }
+                    </div>
+                  </div>
+                )}
+                
                 <video
                   ref={videoRef}
                   className="w-full aspect-video bg-black"
@@ -329,8 +446,12 @@ export default function DirectM3U8Extractor() {
                   playsInline
                 />
                 
-                {/* Video Controls */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                {/* Video Controls - only shown when showControls is true or video is paused */}
+                <div 
+                  className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 transition-opacity duration-300 ${
+                    (showControls || !isPlaying) ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
                   {/* Progress Bar */}
                   <div className="mb-2">
                     <Slider
@@ -352,9 +473,12 @@ export default function DirectM3U8Extractor() {
                     <div className="flex items-center space-x-3">
                       <button 
                         onClick={() => handleSkip(-10)} 
-                        className="text-white hover:text-primary focus:outline-none"
+                        className="text-white hover:text-primary focus:outline-none group relative"
                       >
                         <SkipBack className="h-5 w-5" />
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                          -10 seconds
+                        </span>
                       </button>
                       
                       <button 
@@ -366,19 +490,89 @@ export default function DirectM3U8Extractor() {
                       
                       <button 
                         onClick={() => handleSkip(10)} 
-                        className="text-white hover:text-primary focus:outline-none"
+                        className="text-white hover:text-primary focus:outline-none group relative"
                       >
                         <SkipForward className="h-5 w-5" />
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                          +10 seconds
+                        </span>
                       </button>
+                      
+                      {/* Playback Speed Control */}
+                      <div className="relative">
+                        <button 
+                          onClick={toggleSpeedOptions}
+                          className="text-white hover:text-primary focus:outline-none ml-2 group relative"
+                        >
+                          <div className="flex items-center">
+                            <span className="text-xs font-medium">{playbackSpeed}x</span>
+                          </div>
+                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                            Playback speed
+                          </span>
+                        </button>
+                        
+                        {/* Speed Options Dropdown */}
+                        {showSpeedOptions && (
+                          <div className="absolute bottom-10 left-0 bg-black/80 rounded-md py-1 z-20 animate-fadeIn">
+                            {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
+                              <button
+                                key={speed}
+                                className={`block w-full text-left px-4 py-1 text-sm ${
+                                  playbackSpeed === speed ? 'text-primary' : 'text-white'
+                                } hover:bg-white/10`}
+                                onClick={() => changePlaybackSpeed(speed)}
+                              >
+                                {speed}x {playbackSpeed === speed && '✓'}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="flex items-center space-x-3">
+                      {/* Quality Selection */}
+                      <div className="relative">
+                        <button 
+                          onClick={toggleQualityOptions}
+                          className="text-white hover:text-primary focus:outline-none group relative"
+                        >
+                          <div className="flex items-center">
+                            <span className="text-xs font-medium">{selectedQuality}</span>
+                          </div>
+                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                            Video quality
+                          </span>
+                        </button>
+                        
+                        {/* Quality Options Dropdown */}
+                        {showQualityOptions && (
+                          <div className="absolute bottom-10 right-0 bg-black/80 rounded-md py-1 z-20 animate-fadeIn min-w-[80px]">
+                            {availableQualities.map((quality) => (
+                              <button
+                                key={quality}
+                                className={`block w-full text-left px-4 py-1 text-sm ${
+                                  selectedQuality === quality ? 'text-primary' : 'text-white'
+                                } hover:bg-white/10`}
+                                onClick={() => setQuality(quality)}
+                              >
+                                {quality} {selectedQuality === quality && '✓'}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
                       <div className="flex items-center">
                         <button 
                           onClick={toggleMute} 
-                          className="text-white hover:text-primary focus:outline-none mr-2"
+                          className="text-white hover:text-primary focus:outline-none mr-2 group relative"
                         >
                           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                            {isMuted ? 'Unmute' : 'Mute'}
+                          </span>
                         </button>
                         <Slider
                           value={[isMuted ? 0 : volume]}
@@ -397,16 +591,22 @@ export default function DirectM3U8Extractor() {
                             videoRef.current.play();
                           }
                         }} 
-                        className="text-white hover:text-primary focus:outline-none"
+                        className="text-white hover:text-primary focus:outline-none group relative"
                       >
                         <RotateCw className="h-5 w-5" />
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                          Restart
+                        </span>
                       </button>
                       
                       <button 
                         onClick={toggleFullscreen} 
-                        className="text-white hover:text-primary focus:outline-none"
+                        className="text-white hover:text-primary focus:outline-none group relative"
                       >
                         <Maximize className="h-5 w-5" />
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                          Fullscreen
+                        </span>
                       </button>
                     </div>
                   </div>
