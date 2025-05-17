@@ -202,7 +202,7 @@ export default function MediaInfoSearch() {
     e.preventDefault();
     
     if (!movieSearchQuery.trim()) {
-      setMovieSearchError("Please enter a movie title to search");
+      setMovieSearchError("Please enter a file title to search");
       return;
     }
     
@@ -211,8 +211,8 @@ export default function MediaInfoSearch() {
     setMovieSearchResults([]);
     
     try {
-      // Free public TMDB API endpoint (using query parameter)
-      const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=3e4d2ba9723bf5ae49f4383f067bc35c&query=${encodeURIComponent(movieSearchQuery.trim())}`);
+      // Use server-side endpoint to avoid exposing API key in client
+      const response = await fetch(`/api/search-files?query=${encodeURIComponent(movieSearchQuery.trim())}`);
       
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`);
@@ -220,14 +220,14 @@ export default function MediaInfoSearch() {
       
       const data = await response.json();
       
-      if (data.results && data.results.length > 0) {
+      if (data.success && data.results && data.results.length > 0) {
         setMovieSearchResults(data.results);
       } else {
-        setMovieSearchError("No movies found matching your search.");
+        setMovieSearchError("No files found matching your search.");
       }
     } catch (err) {
-      console.error("Failed to search for movies:", err);
-      setMovieSearchError("Failed to search for movies. Please try again.");
+      console.error("Failed to search for files:", err);
+      setMovieSearchError("Failed to search for files. Please try again.");
     } finally {
       setIsMovieSearchLoading(false);
     }
@@ -344,11 +344,11 @@ export default function MediaInfoSearch() {
           <div>
             <h3 className="text-lg font-medium mb-2 flex items-center">
               <Film className="h-4 w-4 mr-2" /> 
-              Search for Movies
+              Search for Files
             </h3>
             <form onSubmit={handleMovieSearch} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="movieSearchQuery" className="font-medium text-gray-700">Movie Title</Label>
+                <Label htmlFor="movieSearchQuery" className="font-medium text-gray-700">File Title</Label>
                 <div className="flex space-x-2">
                   <Input
                     id="movieSearchQuery"
@@ -374,10 +374,10 @@ export default function MediaInfoSearch() {
                   <p className="text-error text-sm">{movieSearchError}</p>
                 )}
                 
-                {/* Movie Search Results */}
+                {/* File Search Results */}
                 {movieSearchResults.length > 0 && (
                   <div className="mt-3 space-y-2">
-                    <p className="text-sm font-medium text-gray-700">Found {movieSearchResults.length} movies:</p>
+                    <p className="text-sm font-medium text-gray-700">Found {movieSearchResults.length} files:</p>
                     <div className="max-h-72 overflow-y-auto pr-2">
                       {movieSearchResults.map((movie) => (
                         <div 
@@ -420,17 +420,17 @@ export default function MediaInfoSearch() {
             <Separator className="my-4" />
             <h3 className="text-lg font-medium mb-2 flex items-center">
               <Search className="h-4 w-4 mr-2" /> 
-              Search by IMDB ID
+              Search by IID
             </h3>
             <form id="mediaIdForm" onSubmit={handleSearch} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="mediaId" className="font-medium text-gray-700">IMDB ID</Label>
+                <Label htmlFor="mediaId" className="font-medium text-gray-700">IID</Label>
                 <div className="flex space-x-2">
                   <Input
                     id="mediaId"
                     value={mediaId}
                     onChange={(e) => setMediaId(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-[2px] focus:blur-0"
                     placeholder="e.g. tt1877830"
                   />
                   <Button 
@@ -458,17 +458,17 @@ export default function MediaInfoSearch() {
             <Separator className="my-4" />
             <h3 className="text-lg font-medium mb-2 flex items-center">
               <RefreshCw className="h-4 w-4 mr-2" /> 
-              Search by TMDB ID
+              Search by TID
             </h3>
             <form onSubmit={handleTmdbSearch} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="tmdbId" className="font-medium text-gray-700">TMDB ID</Label>
+                <Label htmlFor="tmdbId" className="font-medium text-gray-700">TID</Label>
                 <div className="flex space-x-2">
                   <Input
                     id="tmdbId"
                     value={tmdbId}
                     onChange={(e) => setTmdbId(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-[2px] focus:blur-0"
                     placeholder="e.g. 299536"
                   />
                   <Button 

@@ -26,6 +26,53 @@ const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Search files by title
+  app.get("/api/search-files", async (req: Request, res: Response) => {
+    try {
+      const query = req.query.query as string;
+      const tmdbApiKey = process.env.TMDB_API_KEY;
+      
+      if (!tmdbApiKey) {
+        return res.status(500).json({ 
+          success: false, 
+          error: "TMDB API key not configured" 
+        });
+      }
+      
+      if (!query) {
+        return res.status(400).json({
+          success: false,
+          error: "Search query is required"
+        });
+      }
+      
+      // Search for movies using the TMDB API
+      const response = await fetch(
+        `https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(query)}`
+      );
+      
+      if (!response.ok) {
+        return res.status(response.status).json({ 
+          success: false, 
+          error: `TMDB API error: ${response.statusText}` 
+        });
+      }
+      
+      const data = await response.json() as any;
+      
+      return res.json({
+        success: true,
+        results: data.results || []
+      });
+    } catch (error) {
+      console.error("Error searching for files:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to search for files" 
+      });
+    }
+  });
+  
   // TMDB to IMDB ID conversion endpoint
   app.get("/api/tmdb-to-imdb/:tmdbId", async (req: Request, res: Response) => {
     try {
