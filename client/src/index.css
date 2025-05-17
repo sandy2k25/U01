@@ -2,6 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom animations for player controls */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-fadeOut {
+  animation: fadeOut 0.3s ease-in-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-in-out;
+}
+
+.animate-pulse-custom {
+  animation: pulse 1s infinite;
+}
+
+/* Controls hover effects */
+.controls-btn {
+  transition: all 0.2s ease-in-out;
+}
+
+.controls-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Keep sensitive content permanently blurred */
+.blur-permanent {
+  filter: blur(5px);
+  user-select: none;
+}
+
+.blur-permanent:hover, 
+.blur-permanent:focus {
+  filter: blur(5px);
+}
+
 :root {
       --background: 0 0% 100%;
 --foreground: 20 14.3% 4.1%;
