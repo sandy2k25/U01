@@ -796,7 +796,7 @@ export default function DirectM3U8Extractor() {
                       </div>
                       
                       <div className="bg-white p-3 rounded-md border border-gray-200 break-all">
-                        <code className="text-sm font-mono text-gray-800 blur-sm hover:blur-0 focus:blur-0 transition-all duration-300">
+                        <code className="text-sm font-mono text-gray-800 blur-permanent select-none">
                           {m3u8Url}
                         </code>
                       </div>
@@ -828,6 +828,9 @@ export default function DirectM3U8Extractor() {
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                               placeholder="Enter admin password"
                             />
+                            <p className="text-amber-600 text-xs mt-1">
+                              Using the ADMIN_API_KEY from environment variables
+                            </p>
                           </div>
                           <div className="flex justify-end space-x-2">
                             <Button
