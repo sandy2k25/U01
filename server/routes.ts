@@ -378,7 +378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check against the admin password (use environment variable)
-      const adminPassword = process.env.ADMIN_API_KEY || API_KEY;
+      const adminPassword = process.env.ADMIN_API_KEY || process.env.TMDB_API_KEY || "admin123";
       
       if (password === adminPassword) {
         return res.json({
