@@ -378,7 +378,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check against the admin password (use environment variable)
-      const adminPassword = process.env.ADMIN_API_KEY;
+      const adminPassword = process.env.ADMIN_API_KEY || API_KEY;
+      console.log("Admin password verification attempt");
       
       if (password === adminPassword) {
         return res.json({
