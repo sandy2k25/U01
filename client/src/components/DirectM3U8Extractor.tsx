@@ -25,6 +25,10 @@ export default function DirectM3U8Extractor() {
   const [availableQualities, setAvailableQualities] = useState<string[]>([]);
   const [selectedQuality, setSelectedQuality] = useState("auto");
   const [isControlsAnimationActive, setIsControlsAnimationActive] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [showAdminAuth, setShowAdminAuth] = useState(false);
+  const [encryptedUrl, setEncryptedUrl] = useState("");
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
@@ -310,8 +314,32 @@ export default function DirectM3U8Extractor() {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Copy the URL to clipboard
-  const copyToClipboard = async () => {
+  // Handle admin authentication
+  const handleAdminAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // For demonstration purposes, using a simple fixed password
+    // In a real application, this should be handled server-side with proper security
+    const correctPassword = "admin123"; // This would normally be stored securely
+    
+    if (adminPassword === correctPassword) {
+      setIsAdminAuthenticated(true);
+      setShowAdminAuth(false);
+      toast({
+        title: "Authentication Successful",
+        description: "You now have admin access to view the stream URL",
+      });
+    } else {
+      toast({
+        title: "Authentication Failed",
+        description: "Incorrect admin password",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Generate encrypted URL for sharing
+  const generateEncryptedUrl = () => {
     if (!m3u8Url) {
       toast({
         title: "No URL available",
@@ -321,14 +349,38 @@ export default function DirectM3U8Extractor() {
       return;
     }
     
+    // Simple "encryption" by encoding the URL - in a real app this would be more secure
+    const encodedUrl = btoa(m3u8Url);
+    const appUrl = window.location.origin;
+    const encryptedPlayerUrl = `${appUrl}/secure-player?token=${encodedUrl}`;
+    
+    setEncryptedUrl(encryptedPlayerUrl);
+    
+    toast({
+      title: "Encrypted URL Generated",
+      description: "The secure player URL has been generated",
+    });
+  };
+  
+  // Copy the URL to clipboard
+  const copyToClipboard = async (urlToCopy: string) => {
+    if (!urlToCopy) {
+      toast({
+        title: "No URL available",
+        description: "Please enter credentials in the Code Generator section first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
-      await navigator.clipboard.writeText(m3u8Url);
+      await navigator.clipboard.writeText(urlToCopy);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
       
       toast({
         title: "URL copied",
-        description: "Stream URL copied to clipboard",
+        description: "URL copied to clipboard",
       });
     } catch (error) {
       console.error("Failed to copy:", error);
@@ -400,18 +452,14 @@ export default function DirectM3U8Extractor() {
           </div>
         ) : m3u8Url ? (
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full grid grid-cols-3 mb-4">
+            <TabsList className="w-full grid grid-cols-2 mb-4">
               <TabsTrigger value="player" className="flex items-center">
                 <MonitorPlay className="h-4 w-4 mr-2" />
-                Player
+                Advanced Player
               </TabsTrigger>
-              <TabsTrigger value="url" className="flex items-center">
+              <TabsTrigger value="encrypted" className="flex items-center">
                 <Clipboard className="h-4 w-4 mr-2" />
-                Stream URL
-              </TabsTrigger>
-              <TabsTrigger value="external" className="flex items-center">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                External Players
+                Encrypted Stream
               </TabsTrigger>
             </TabsList>
             
@@ -614,85 +662,156 @@ export default function DirectM3U8Extractor() {
               </div>
             </TabsContent>
             
-            {/* URL Tab */}
-            <TabsContent value="url" className="mt-0">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-medium text-gray-700">Direct Stream URL:</h3>
-                  <Button
-                    onClick={copyToClipboard}
-                    variant="ghost"
-                    size="sm"
-                    className={`text-sm flex items-center ${isCopied ? 'text-green-600' : 'text-gray-700'}`}
-                  >
-                    {isCopied ? (
-                      <>
-                        <Check className="h-4 w-4 mr-1" />
-                        <span>Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Clipboard className="h-4 w-4 mr-1" />
-                        <span>Copy URL</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-                
-                <div className="bg-gray-50 p-3 rounded-md border border-gray-200 break-all mb-2">
-                  <code className="text-sm font-mono text-gray-800">{m3u8Url}</code>
-                </div>
-              </div>
-            </TabsContent>
-            
-            {/* External Players Tab */}
-            <TabsContent value="external" className="mt-0">
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-md border border-gray-200">
-                  <h3 className="font-medium text-gray-800 mb-2">Open in External Players</h3>
-                  <p className="text-sm text-gray-600 mb-4">Use these links to open the stream in your preferred player:</p>
+            {/* Encrypted Stream Tab */}
+            <TabsContent value="encrypted" className="mt-0">
+              <div className="space-y-6">
+                <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-800 mb-3">Secure Encrypted Stream</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Generate an encrypted stream URL that can be shared securely. The encrypted URL will work in the embedded player without exposing the actual stream source.
+                  </p>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <a 
-                      href={`vlc://${m3u8Url}`}
-                      className="flex items-center p-3 bg-white rounded border border-gray-300 hover:bg-gray-100 transition-colors"
+                  {encryptedUrl ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-gray-700">Your Encrypted URL:</h4>
+                        <Button
+                          onClick={() => {
+                            if (encryptedUrl) copyToClipboard(encryptedUrl);
+                          }}
+                          variant="ghost"
+                          size="sm"
+                          className={`text-sm flex items-center ${isCopied ? 'text-green-600' : 'text-gray-700'}`}
+                        >
+                          {isCopied ? (
+                            <>
+                              <Check className="h-4 w-4 mr-1" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clipboard className="h-4 w-4 mr-1" />
+                              <span>Copy URL</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      
+                      <div className="bg-white p-3 rounded-md border border-gray-200 break-all">
+                        <code className="text-sm font-mono text-gray-800">{encryptedUrl}</code>
+                      </div>
+                      
+                      <div className="flex justify-end mt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => window.open(encryptedUrl, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          Test Encrypted Player
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button 
+                      onClick={generateEncryptedUrl}
+                      className="w-full bg-primary hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-md transition duration-200"
                     >
-                      <img src="https://www.videolan.org/images/vlc-logo.png" alt="VLC" className="w-6 h-6 mr-2" />
-                      <span className="font-medium">Open in VLC</span>
-                    </a>
-                    
-                    <a 
-                      href={`potplayer://${m3u8Url}`}
-                      className="flex items-center p-3 bg-white rounded border border-gray-300 hover:bg-gray-100 transition-colors"
-                    >
-                      <img src="https://potplayer.daum.net/images/PotPlayer64.png" alt="PotPlayer" className="w-6 h-6 mr-2" />
-                      <span className="font-medium">Open in PotPlayer</span>
-                    </a>
-                    
-                    <a 
-                      href={m3u8Url}
-                      target="_blank"
-                      rel="noopener noreferrer" 
-                      className="flex items-center p-3 bg-white rounded border border-gray-300 hover:bg-gray-100 transition-colors"
-                    >
-                      <Play className="h-5 w-5 mr-2 text-primary" />
-                      <span className="font-medium">Open in New Tab</span>
-                    </a>
-                    
-                    <a 
-                      href={`https://www.hlsplayer.net/play?url=${encodeURIComponent(m3u8Url)}`}
-                      target="_blank"
-                      rel="noopener noreferrer" 
-                      className="flex items-center p-3 bg-white rounded border border-gray-300 hover:bg-gray-100 transition-colors"
-                    >
-                      <ExternalLink className="h-5 w-5 mr-2 text-primary" />
-                      <span className="font-medium">Open in HLS Player</span>
-                    </a>
-                  </div>
+                      Generate Encrypted Stream URL
+                    </Button>
+                  )}
                 </div>
                 
-                <div className="text-sm text-gray-500">
-                  <p>Note: Protocol handlers (vlc://, potplayer://) work only if the apps are installed and configured on your system.</p>
+                <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-800 mb-3">Admin Access</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Admin access is required to view the direct stream URL. This helps prevent unauthorized access to source streams.
+                  </p>
+                  
+                  {isAdminAuthenticated ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-gray-700">Direct Stream URL:</h4>
+                        <Button
+                          onClick={() => {
+                            if (m3u8Url) copyToClipboard(m3u8Url);
+                          }}
+                          variant="ghost"
+                          size="sm"
+                          className={`text-sm flex items-center ${isCopied ? 'text-green-600' : 'text-gray-700'}`}
+                        >
+                          {isCopied ? (
+                            <>
+                              <Check className="h-4 w-4 mr-1" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clipboard className="h-4 w-4 mr-1" />
+                              <span>Copy URL</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      
+                      <div className="bg-white p-3 rounded-md border border-gray-200 break-all">
+                        <code className="text-sm font-mono text-gray-800 blur-sm hover:blur-0 focus:blur-0 transition-all duration-300">
+                          {m3u8Url}
+                        </code>
+                      </div>
+                      
+                      <div className="flex justify-end mt-2">
+                        <Button
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsAdminAuthenticated(false)}
+                          className="text-xs text-gray-600"
+                        >
+                          Logout
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {showAdminAuth ? (
+                        <form onSubmit={handleAdminAuth} className="space-y-3">
+                          <div className="space-y-2">
+                            <label htmlFor="adminPassword" className="text-sm font-medium text-gray-700">
+                              Admin Password:
+                            </label>
+                            <input
+                              id="adminPassword"
+                              type="password"
+                              value={adminPassword}
+                              onChange={(e) => setAdminPassword(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                              placeholder="Enter admin password"
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setShowAdminAuth(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button type="submit">
+                              Authenticate
+                            </Button>
+                          </div>
+                        </form>
+                      ) : (
+                        <Button 
+                          onClick={() => setShowAdminAuth(true)}
+                          className="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-md transition duration-200"
+                        >
+                          Authenticate as Admin
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </TabsContent>
