@@ -10,13 +10,9 @@ export default function Home() {
       <div className="container mx-auto px-4 py-10 max-w-3xl">
         <header className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">API Tools</h1>
-            <p className="text-gray-600">Search media information and generate API code</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">WovIeX 2.0</h1>
+            <p className="text-gray-600">Search files and generate streaming URLs</p>
           </div>
-          <Link href="/admin" className="flex items-center text-blue-600 hover:text-blue-800">
-            <Settings className="h-5 w-5 mr-1" />
-            Admin
-          </Link>
         </header>
 
         <div className="space-y-8">

@@ -315,24 +315,49 @@ export default function DirectM3U8Extractor() {
   };
 
   // Handle admin authentication
-  const handleAdminAuth = (e: React.FormEvent) => {
+  const handleAdminAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // For demonstration purposes, using a simple fixed password
-    // In a real application, this should be handled server-side with proper security
-    const correctPassword = "admin123"; // This would normally be stored securely
-    
-    if (adminPassword === correctPassword) {
-      setIsAdminAuthenticated(true);
-      setShowAdminAuth(false);
-      toast({
-        title: "Authentication Successful",
-        description: "You now have admin access to view the stream URL",
-      });
-    } else {
+    if (!adminPassword.trim()) {
       toast({
         title: "Authentication Failed",
-        description: "Incorrect admin password",
+        description: "Password cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Authenticate against server-side endpoint
+      const response = await fetch('/api/admin/verify-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password: adminPassword }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsAdminAuthenticated(true);
+        setShowAdminAuth(false);
+        toast({
+          title: "Authentication Successful",
+          description: "You now have admin access to view the stream URL",
+        });
+      } else {
+        toast({
+          title: "Authentication Failed",
+          description: "Incorrect admin password",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Authentication error:", error);
+      toast({
+        title: "Authentication Error",
+        description: "An error occurred during authentication",
         variant: "destructive",
       });
     }

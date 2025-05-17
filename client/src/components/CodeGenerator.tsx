@@ -197,8 +197,9 @@ export default function CodeGenerator() {
                 id="fileId"
                 value={fileId}
                 onChange={(e) => setFileId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-[2px] focus:blur-0"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-sm focus:blur-sm"
                 placeholder="e.g. ~8i-Mu-WONoEdJ9whQe+Ldow..."
+                readOnly
               />
             </div>
             {fileIdError && (
@@ -213,8 +214,9 @@ export default function CodeGenerator() {
                 id="apiKey"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-[2px] focus:blur-0"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-sm focus:blur-sm"
                 placeholder="e.g. rcbeUV3KoCw-dSFJ-vN$-JwI4OXlCmOaAx05HkWyclbx46SNcazmpYmnFTXoNjo"
+                readOnly
               />
             </div>
             {apiKeyError && (

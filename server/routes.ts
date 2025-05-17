@@ -365,6 +365,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin password verification endpoint
+  app.post("/api/admin/verify-password", async (req: Request, res: Response) => {
+    try {
+      const { password } = req.body;
+      
+      if (!password) {
+        return res.status(400).json({
+          success: false,
+          error: "Password is required"
+        });
+      }
+      
+      // Check against the admin password (use environment variable)
+      const adminPassword = process.env.ADMIN_API_KEY || API_KEY;
+      
+      if (password === adminPassword) {
+        return res.json({
+          success: true,
+          message: "Password verified successfully"
+        });
+      } else {
+        return res.json({
+          success: false,
+          error: "Invalid password"
+        });
+      }
+    } catch (error) {
+      console.error("Error verifying admin password:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to verify password"
+      });
+    }
+  });
+  
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
