@@ -546,10 +546,10 @@ export default function DirectM3U8Extractor() {
                     <div className="flex items-center space-x-3">
                       <button 
                         onClick={() => handleSkip(-10)} 
-                        className="text-white hover:text-primary focus:outline-none group relative"
+                        className="text-white hover:text-primary focus:outline-none group relative controls-btn"
                       >
                         <SkipBack className="h-5 w-5" />
-                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap animate-scaleIn">
                           -10 seconds
                         </span>
                       </button>
@@ -723,19 +723,34 @@ export default function DirectM3U8Extractor() {
                       </div>
                       
                       <div className="bg-white p-3 rounded-md border border-gray-200 break-all">
-                        <code className="text-sm font-mono text-gray-800">{encryptedUrl}</code>
+                        <code className="text-sm font-mono text-gray-800 blur-permanent select-none">{encryptedUrl}</code>
                       </div>
                       
-                      <div className="flex justify-end mt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs"
-                          onClick={() => window.open(encryptedUrl, '_blank')}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          Test Encrypted Player
-                        </Button>
+                      {/* Encrypted Stream Preview Player */}
+                      <div className="mt-6 border border-gray-200 rounded-lg overflow-hidden">
+                        <h4 className="font-medium text-gray-700 p-3 bg-gray-50 border-b border-gray-200">
+                          Secure Player Preview
+                        </h4>
+                        <div className="aspect-video bg-black relative">
+                          <iframe 
+                            src={`/secure-player?token=${encryptedUrl.split('token=')[1] || ''}`}
+                            className="w-full h-full"
+                            allow="autoplay; encrypted-media; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
+                        </div>
+                        <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-between">
+                          <span className="text-sm text-gray-600">Stream source is safely encrypted</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => window.open(encryptedUrl, '_blank')}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            Open in New Tab
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ) : (
