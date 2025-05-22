@@ -141,6 +141,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 --success-color: #10b981;
                 --danger-color: #ef4444;
                 --info-color: #3b82f6;
+                --logo-background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+                --logo-shadow: 0 8px 32px rgba(109, 40, 217, 0.4);
               }
               
               body { 
@@ -421,16 +423,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               @keyframes float {
-                0% { transform: translateY(0px) rotate(0deg); }
-                25% { transform: translateY(-5px) rotate(2deg); }
-                75% { transform: translateY(3px) rotate(-2deg); }
-                100% { transform: translateY(0px) rotate(0deg); }
+                0% { transform: translateY(0px) rotate(0deg) scale(1); }
+                25% { transform: translateY(-5px) rotate(2deg) scale(1.03); }
+                75% { transform: translateY(3px) rotate(-2deg) scale(0.97); }
+                100% { transform: translateY(0px) rotate(0deg) scale(1); }
               }
               
               @keyframes glow {
-                0% { filter: drop-shadow(0 0 2px rgba(139, 92, 246, 0.3)); }
-                50% { filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6)); }
-                100% { filter: drop-shadow(0 0 2px rgba(139, 92, 246, 0.3)); }
+                0% { filter: drop-shadow(0 0 5px rgba(139, 92, 246, 0.5)); }
+                50% { filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.8)); }
+                100% { filter: drop-shadow(0 0 5px rgba(139, 92, 246, 0.5)); }
               }
               
               /* WovIe Player Logo */
@@ -441,8 +443,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 font-family: 'Russo One', sans-serif;
                 font-size: 24px;
                 font-weight: 400;
-                padding: 10px 20px;
-                background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+                padding: 12px 24px;
+                background: var(--logo-background);
                 color: white;
                 border-radius: 12px;
                 z-index: 15;
@@ -450,11 +452,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 user-select: none;
                 opacity: 0;
                 transition: opacity 0.5s ease, transform 0.5s ease;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+                box-shadow: var(--logo-shadow);
                 text-shadow: 0 2px 4px rgba(0,0,0,0.3);
                 letter-spacing: 2px;
-                animation: float 4s ease-in-out infinite, glow 2s ease-in-out infinite;
+                animation: float 4s ease-in-out infinite, glow 3s ease-in-out infinite;
                 transform-origin: center right;
+                border-right: 4px solid white;
+                overflow: hidden;
+                position: relative;
+              }
+              
+              .wovie-logo::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -50%;
+                width: 50%;
+                height: 100%;
+                background: linear-gradient(90deg, 
+                    rgba(255,255,255,0) 0%, 
+                    rgba(255,255,255,0.3) 50%, 
+                    rgba(255,255,255,0) 100%);
+                transform: skewX(-20deg);
+                animation: shine 3s infinite;
+              }
+              
+              @keyframes shine {
+                0% { left: -50%; }
+                100% { left: 150%; }
               }
               
               .wovie-logo span {
@@ -462,6 +487,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 font-weight: 300;
                 letter-spacing: 0;
                 font-family: 'Poppins', sans-serif;
+                margin-left: 4px;
+                opacity: 0.9;
+                font-size: 22px;
+                text-shadow: none;
               }
               
               .player-container.controls-visible .wovie-logo {
