@@ -1265,7 +1265,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               <!-- Additional Controls for newer features -->
               <div class="additional-controls">
-                <!-- Buttons for PIP, Cast and Landscape have been moved to settings panel -->
+                <button class="feature-button pip-btn" id="pipButton" title="Picture-in-Picture">
+                  <i class="fas fa-clone"></i>
+                </button>
+                <button class="feature-button" id="castButton" title="Cast to TV">
+                  <i class="fas fa-cast"></i>
+                </button>
+                <button class="feature-button landscape-btn" id="landscapeButton" title="Landscape Mode">
+                  <i class="fas fa-mobile-alt"></i>
+                </button>
               </div>
               
               <!-- Advanced Controls with improved layout -->
