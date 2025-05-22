@@ -106,6 +106,18 @@ export default function MediaInfoSearch() {
         fileIdInput.dispatchEvent(inputEvent);
         apiKeyInput.dispatchEvent(inputEvent);
         
+        // First, force open the credentials section if it's closed
+        // Find the credentials section collapsible trigger by ID
+        const credentialsToggle = document.getElementById('credentialsToggle') as HTMLButtonElement;
+        if (credentialsToggle) {
+          // Check if it's closed (has "Show" text)
+          const isCollapsed = credentialsToggle.textContent?.includes('Show');
+          if (isCollapsed) {
+            console.log("Opening credentials section automatically");
+            credentialsToggle.click(); // Open it
+          }
+        }
+        
         // Create a more specific custom event with the actual data
         const languageSelectedEvent = new CustomEvent('language-selected', {
           bubbles: true,
@@ -118,10 +130,19 @@ export default function MediaInfoSearch() {
         // Dispatch the custom event with the data
         console.log("Dispatching language-selected event with data:", selectedLanguage.file, apiKey);
         document.dispatchEvent(languageSelectedEvent);
+        
+        // Immediately force a click on the update button
+        setTimeout(() => {
+          const updateButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+          if (updateButton) {
+            console.log("Automatically clicking update button");
+            updateButton.click();
+          }
+        }, 200);
           
         toast({
           title: "Language selected",
-          description: `${selectedLanguage.title} file ID has been transferred and code updated`,
+          description: `${selectedLanguage.title} activated! Stream is ready to play`,
         });
         
         // Force a code update via synthetic submit event
