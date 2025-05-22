@@ -849,58 +849,64 @@ export default function DirectM3U8Extractor() {
             
             {/* Encrypted Stream URL Tab */}
             <TabsContent value="encrypted" className="mt-0">
-              <div className="aspect-video bg-black relative">
+              <div className="aspect-video bg-gradient-to-br from-gray-900 to-black relative">
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
                   <h3 className="text-white text-xl font-semibold mb-6">Share Encrypted Stream</h3>
                   
                   <div className="w-full max-w-xl space-y-6">
-                    <div className="space-y-2">
-                      <p className="text-gray-300 text-sm">
-                        Generate an encrypted URL that can be shared with others. The URL contains the stream data without exposing the actual M3U8 URL.
-                      </p>
-                      
-                      <div className="flex justify-center">
-                        <Button
-                          onClick={generateEncryptedUrl}
-                          className="bg-primary hover:bg-blue-600 text-white"
-                        >
-                          Generate Encrypted URL
-                        </Button>
+                    {!encryptedUrl ? (
+                      <div className="space-y-4">
+                        <p className="text-gray-300 text-sm text-center">
+                          Generate an encrypted URL that can be shared with others. The URL contains the stream data without exposing the actual M3U8 URL.
+                        </p>
+                        
+                        <div className="flex justify-center">
+                          <Button
+                            onClick={generateEncryptedUrl}
+                            className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-medium py-2 px-6 rounded-md transition duration-200 flex items-center shadow-lg shadow-blue-700/30"
+                            disabled={!m3u8Url}
+                          >
+                            <PlayCircle className="h-5 w-5 mr-2" />
+                            Generate Secure URL
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                    
-                    {encryptedUrl && (
-                      <div className="space-y-3 bg-gray-900/50 p-4 rounded-md">
-                        <div className="space-y-1">
-                          <p className="text-gray-300 text-sm mb-1">Encrypted Stream URL:</p>
-                          <div className="bg-black/40 p-3 rounded overflow-auto text-sm font-mono text-gray-200 max-h-20">
+                    ) : (
+                      <div className="space-y-4 bg-gray-900/70 p-5 rounded-lg shadow-xl border border-gray-800">
+                        <div>
+                          <h4 className="text-gray-100 font-medium mb-2">Encrypted Stream URL</h4>
+                          <div className="bg-black/60 p-3 rounded-md overflow-auto text-sm font-mono text-gray-200 max-h-20 border border-gray-700">
                             {encryptedUrl}
                           </div>
                         </div>
                         
-                        <div className="flex space-x-2">
+                        <div className="flex flex-col sm:flex-row gap-3">
                           <Button
                             onClick={() => copyToClipboard(encryptedUrl)}
-                            className="bg-gray-700 hover:bg-gray-600 text-white flex-1"
+                            className="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white font-medium py-2 px-4 rounded-md transition duration-200 flex-1 flex items-center justify-center gap-2 shadow-md"
                           >
-                            {isCopied ? (
-                              <>
-                                <Check className="h-4 w-4 mr-2" /> Copied!
-                              </>
-                            ) : (
-                              <>
-                                <Clipboard className="h-4 w-4 mr-2" /> Copy URL
-                              </>
-                            )}
+                            {isCopied ? <Check className="h-4 w-4" /> : <Clipboard className="h-4 w-4" />}
+                            <span>{isCopied ? "Copied!" : "Copy URL"}</span>
                           </Button>
                           
                           <Button 
                             asChild
-                            className="bg-gray-700 hover:bg-gray-600 text-white flex-1"
+                            className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 text-white font-medium py-2 px-4 rounded-md transition duration-200 flex-1 flex items-center justify-center gap-2 shadow-md"
                           >
                             <a href={encryptedUrl} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4 mr-2" /> Open Player
+                              <ExternalLink className="h-4 w-4" />
+                              <span>Open Player</span>
                             </a>
+                          </Button>
+                        </div>
+                        
+                        <div className="mt-2 pt-3 border-t border-gray-700">
+                          <Button
+                            onClick={() => setEncryptedUrl("")}
+                            variant="outline"
+                            className="text-xs text-gray-400 hover:text-gray-200 border-gray-700 hover:border-gray-500 w-full"
+                          >
+                            Generate New URL
                           </Button>
                         </div>
                       </div>

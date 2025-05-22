@@ -232,72 +232,54 @@ export default function CodeGenerator() {
     <Card className="bg-gradient-to-br from-purple-900/40 to-pink-900/40 backdrop-blur-sm rounded-xl border border-purple-500/20 shadow-lg shadow-purple-500/20 overflow-hidden glow-card">
       {/* Input Section with Collapsible */}
       <section className="p-6 border-b border-gray-200">
-        <Collapsible 
-          open={isCredentialsOpen} 
-          onOpenChange={setIsCredentialsOpen}
-          className="w-full"
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold gradient-purple-text">Credentials</h2>
-            <CollapsibleTrigger asChild>
-              <Button id="credentialsToggle" variant="ghost" size="sm" className="p-1 h-auto collapsible-trigger">
-                {isCredentialsOpen ? (
-                  <ChevronUp className="h-5 w-5 text-gray-500" />
-                ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-500" />
-                )}
-                <span className="ml-2 text-sm text-gray-600">
-                  {isCredentialsOpen ? "Hide" : "Show"}
-                </span>
-              </Button>
-            </CollapsibleTrigger>
-          </div>
-          
-          <CollapsibleContent className="mt-4">
-            <form onSubmit={handleUpdateCode} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="fileId" className="font-medium text-gray-700">File ID</Label>
-                <div className="relative">
-                  <Input
-                    id="fileId"
-                    value={fileId}
-                    onChange={(e) => setFileId(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-sm focus:blur-sm"
-                    placeholder="e.g. ~8i-Mu-WONoEdJ9whQe+Ldow..."
-                    readOnly
-                  />
-                </div>
-                {fileIdError && (
-                  <p className="text-error text-sm">Please enter a valid File ID</p>
-                )}
+        <div className="w-full">
+          <h2 className="text-2xl font-bold gradient-purple-text mb-4">Credentials</h2>
+            
+          <form onSubmit={handleUpdateCode} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fileId" className="font-medium text-gray-700">File ID</Label>
+              <div className="relative">
+                <Input
+                  id="fileId"
+                  value={fileId}
+                  onChange={(e) => setFileId(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-sm focus:blur-sm"
+                  placeholder="e.g. ~8i-Mu-WONoEdJ9whQe+Ldow..."
+                  readOnly
+                />
               </div>
+              {fileIdError && (
+                <p className="text-error text-sm">Please enter a valid File ID</p>
+              )}
+            </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="apiKey" className="font-medium text-gray-700">API Key</Label>
-                <div className="relative">
-                  <Input
-                    id="apiKey"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-sm focus:blur-sm"
-                    placeholder="e.g. rcbeUV3KoCw-dSFJ-vN$-JwI4OXlCmOaAx05HkWyclbx46SNcazmpYmnFTXoNjo"
-                    readOnly
-                  />
-                </div>
-                {apiKeyError && (
-                  <p className="text-error text-sm">Please enter a valid API Key</p>
-                )}
+            <div className="space-y-2">
+              <Label htmlFor="apiKey" className="font-medium text-gray-700">API Key</Label>
+              <div className="relative">
+                <Input
+                  id="apiKey"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-sm focus:blur-sm"
+                  placeholder="e.g. rcbeUV3KoCw-dSFJ-vN$-JwI4OXlCmOaAx05HkWyclbx46SNcazmpYmnFTXoNjo"
+                  readOnly
+                />
               </div>
+              {apiKeyError && (
+                <p className="text-error text-sm">Please enter a valid API Key</p>
+              )}
+            </div>
               
-              <Button 
-                type="submit"
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium py-2.5 px-4 rounded-md transition duration-200 shadow-lg shadow-purple-700/30"
-              >
-                Update Code
-              </Button>
-            </form>
-          </CollapsibleContent>
-        </Collapsible>
+            {/* Hidden submit button for automatic form processing */}
+            <Button 
+              type="submit"
+              className="hidden"
+              id="updateCodeBtn"
+            >
+              Update
+            </Button>
+          </form>
+        </div>
       </section>
       
       {/* Hidden Code Display Section - still functional but not visible to users */}
