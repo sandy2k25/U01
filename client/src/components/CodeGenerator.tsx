@@ -240,7 +240,7 @@ export default function CodeGenerator() {
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold gradient-purple-text">Credentials</h2>
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-1 h-auto">
+              <Button id="credentialsToggle" variant="ghost" size="sm" className="p-1 h-auto collapsible-trigger">
                 {isCredentialsOpen ? (
                   <ChevronUp className="h-5 w-5 text-gray-500" />
                 ) : (
