@@ -1,4 +1,8 @@
-// This file is the main entry point for Vercel serverless functions
-// It imports our adapter which handles the Express app setup
-import handler from './adapter';
-export default handler;
+import { Request, Response } from 'express';
+import app from './server';
+
+// Handler for Vercel serverless deployment
+export default function handler(req: Request, res: Response) {
+  // Pass the request to the Express app
+  return app(req, res);
+}
