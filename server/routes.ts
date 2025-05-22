@@ -960,6 +960,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 transform: scaleX(0.75); /* Default 75% volume */
               }
               
+              /* Playback Speed Controls */
+              .speed-container {
+                position: absolute;
+                bottom: 40px;
+                right: 150px;
+                z-index: 15;
+                opacity: 0;
+                transition: opacity 0.5s ease;
+                pointer-events: none;
+              }
+              
+              .player-container.controls-visible .speed-container {
+                opacity: 1;
+                pointer-events: auto;
+              }
+              
+              .speed-btn {
+                background: rgba(0,0,0,0.6);
+                border: none;
+                color: white;
+                padding: 5px 10px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+              }
+              
+              .speed-btn:hover {
+                background: rgba(139, 92, 246, 0.6);
+                transform: translateY(-2px);
+              }
+              
+              .speed-dropdown {
+                position: absolute;
+                bottom: 45px;
+                left: 50%;
+                transform: translateX(-50%) scale(0.95);
+                background: rgba(31, 41, 55, 0.95);
+                border-radius: 8px;
+                padding: 8px 0;
+                display: none;
+                opacity: 0;
+                transition: all 0.3s ease;
+                width: 100px;
+                max-height: 250px;
+                overflow-y: auto;
+                z-index: 100;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                backdrop-filter: blur(8px);
+              }
+              
+              .speed-dropdown.visible {
+                display: block;
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+              }
+              
+              .speed-option {
+                padding: 8px 15px;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-align: center;
+              }
+              
+              .speed-option:hover {
+                background: rgba(255,255,255,0.1);
+                color: var(--highlight-color);
+              }
+              
+              .speed-option.active {
+                background: rgba(139, 92, 246, 0.2);
+                color: var(--highlight-color);
+                font-weight: 500;
+              }
+
               .fullscreen-btn {
                 position: absolute;
                 bottom: 40px;
@@ -1184,15 +1265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               <!-- Additional Controls for newer features -->
               <div class="additional-controls">
-                <button class="feature-button" id="castButton" title="Cast to TV">
-                  <i class="fas fa-cast"></i>
-                </button>
-                <button class="feature-button pip-btn" id="pipButton" title="Picture-in-Picture">
-                  <i class="fas fa-clone"></i>
-                </button>
-                <button class="feature-button landscape-btn" id="landscapeButton" title="Landscape Mode">
-                  <i class="fas fa-mobile-alt"></i>
-                </button>
+                <!-- Buttons for PIP, Cast and Landscape have been moved to settings panel -->
               </div>
               
               <!-- Advanced Controls with improved layout -->
@@ -1237,6 +1310,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 </button>
                 <div class="volume-slider" id="volumeSlider">
                   <div class="volume-level" id="volumeLevel"></div>
+                </div>
+              </div>
+              
+              <!-- Playback Speed Dropdown -->
+              <div class="speed-container">
+                <button class="speed-btn" id="speedBtn">
+                  <span id="currentSpeed">1x</span>
+                </button>
+                <div class="speed-dropdown" id="speedDropdown">
+                  <div class="speed-option" data-speed="0.25">0.25x</div>
+                  <div class="speed-option" data-speed="0.5">0.5x</div>
+                  <div class="speed-option" data-speed="0.75">0.75x</div>
+                  <div class="speed-option active" data-speed="1">1x</div>
+                  <div class="speed-option" data-speed="1.25">1.25x</div>
+                  <div class="speed-option" data-speed="1.5">1.5x</div>
+                  <div class="speed-option" data-speed="1.75">1.75x</div>
+                  <div class="speed-option" data-speed="2">2x</div>
                 </div>
               </div>
               
