@@ -727,7 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 position: absolute;
                 bottom: 40px;
                 right: 20px;
-                z-index: 15;
+                z-index: 999; /* Higher z-index to ensure it appears above other controls */
                 opacity: 0;
                 transition: opacity 0.5s ease;
                 pointer-events: none;
@@ -763,20 +763,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               .settings-menu {
                 position: absolute;
-                bottom: 55px;
-                right: 0;
+                top: 70px;
+                right: 20px;
                 background: rgba(31, 41, 55, 0.95);
                 border-radius: 12px;
-                width: 260px;
+                width: 280px;
                 padding: 15px 0;
                 backdrop-filter: blur(10px);
                 box-shadow: 0 15px 25px rgba(0,0,0,0.4);
                 display: none;
-                transform-origin: bottom right;
+                transform-origin: top right;
                 transform: scale(0.95);
                 transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
                 opacity: 0;
-                max-height: 80vh;
+                max-height: 75vh;
+                overflow-y: auto;
                 z-index: 100; /* Ensure settings menu has high z-index */
                 overflow-y: auto;
                 border: 1px solid rgba(255,255,255,0.1);
@@ -960,11 +961,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 transform: scaleX(0.75); /* Default 75% volume */
               }
               
-              /* Playback Speed Controls */
+              /* Playback Speed Controls - Repositioned */
               .speed-container {
                 position: absolute;
                 bottom: 40px;
-                right: 150px;
+                right: 80px;
                 z-index: 15;
                 opacity: 0;
                 transition: opacity 0.5s ease;
