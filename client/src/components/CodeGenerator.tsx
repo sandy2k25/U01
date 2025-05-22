@@ -11,35 +11,6 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 export default function CodeGenerator() {
-  // Auto-open credentials and update with language selection data
-  useEffect(() => {
-    const handleLanguageSelected = (e: Event) => {
-      // Get data from custom event
-      const customEvent = e as CustomEvent;
-      const { fileId: selectedFileId, apiKey: selectedApiKey } = customEvent.detail;
-      
-      // Open the credentials section
-      setIsCredentialsOpen(true);
-      
-      // Directly update the state values
-      setFileId(selectedFileId);
-      setApiKey(selectedApiKey);
-      
-      // Force code update on language selection
-      setTimeout(() => {
-        // Create a synthetic form event
-        const event = { preventDefault: () => {} } as React.FormEvent;
-        handleUpdateCode(event);
-      }, 100);
-    };
-    
-    document.addEventListener('language-selected', handleLanguageSelected);
-    
-    return () => {
-      document.removeEventListener('language-selected', handleLanguageSelected);
-    };
-  }, []);
-  // Original code template and initial values
   const originalCode = `fetch('https://oplij.koyeb.app/api/v1/getStream',
  { method: 'POST', headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify(
@@ -75,34 +46,6 @@ export default function CodeGenerator() {
   const [isBlurred, setIsBlurred] = useState(true); // Default to blurred state
   const [isCredentialsOpen, setIsCredentialsOpen] = useState(false); // Default to closed credentials section
   const codeSectionRef = useRef<HTMLDivElement>(null);
-  
-  // Handle input change events (needed for integration with MediaInfoSearch)
-  useEffect(() => {
-    const fileIdInput = document.getElementById("fileId") as HTMLInputElement;
-    const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
-    
-    if (fileIdInput && apiKeyInput) {
-      // Listen for input events on fileId input
-      const handleFileIdInput = (e: Event) => {
-        const value = (e.target as HTMLInputElement).value;
-        setFileId(value);
-      };
-      
-      // Listen for input events on apiKey input
-      const handleApiKeyInput = (e: Event) => {
-        const value = (e.target as HTMLInputElement).value;
-        setApiKey(value);
-      };
-      
-      fileIdInput.addEventListener('input', handleFileIdInput);
-      apiKeyInput.addEventListener('input', handleApiKeyInput);
-      
-      return () => {
-        fileIdInput.removeEventListener('input', handleFileIdInput);
-        apiKeyInput.removeEventListener('input', handleApiKeyInput);
-      };
-    }
-  }, []);
   
   const { toast } = useToast();
 
@@ -194,6 +137,63 @@ export default function CodeGenerator() {
         });
       });
   };
+
+  // Auto-open credentials and update with language selection data
+  useEffect(() => {
+    const handleLanguageSelected = (e: Event) => {
+      // Get data from custom event
+      const customEvent = e as CustomEvent;
+      const { fileId: selectedFileId, apiKey: selectedApiKey } = customEvent.detail;
+      
+      // Open the credentials section
+      setIsCredentialsOpen(true);
+      
+      // Directly update the state values
+      setFileId(selectedFileId);
+      setApiKey(selectedApiKey);
+      
+      // Force code update on language selection
+      setTimeout(() => {
+        // Create a synthetic form event
+        const event = { preventDefault: () => {} } as React.FormEvent;
+        handleUpdateCode(event);
+      }, 100);
+    };
+    
+    document.addEventListener('language-selected', handleLanguageSelected);
+    
+    return () => {
+      document.removeEventListener('language-selected', handleLanguageSelected);
+    };
+  }, []);
+  
+  // Handle input change events (needed for integration with MediaInfoSearch)
+  useEffect(() => {
+    const fileIdInput = document.getElementById("fileId") as HTMLInputElement;
+    const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
+    
+    if (fileIdInput && apiKeyInput) {
+      // Listen for input events on fileId input
+      const handleFileIdInput = (e: Event) => {
+        const value = (e.target as HTMLInputElement).value;
+        setFileId(value);
+      };
+      
+      // Listen for input events on apiKey input
+      const handleApiKeyInput = (e: Event) => {
+        const value = (e.target as HTMLInputElement).value;
+        setApiKey(value);
+      };
+      
+      fileIdInput.addEventListener('input', handleFileIdInput);
+      apiKeyInput.addEventListener('input', handleApiKeyInput);
+      
+      return () => {
+        fileIdInput.removeEventListener('input', handleFileIdInput);
+        apiKeyInput.removeEventListener('input', handleApiKeyInput);
+      };
+    }
+  }, []);
 
   // Add flash animation style
   useEffect(() => {
