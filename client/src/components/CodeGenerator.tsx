@@ -11,18 +11,17 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 export default function CodeGenerator() {
-  // Track whether credentials should be shown
-  const [credentialsVisible, setCredentialsVisible] = useState(false);
-  
   // Auto-open credentials if needed (when language is selected)
   useEffect(() => {
-    // We use a custom event to listen for language selections
     const handleLanguageSelected = () => {
-      setCredentialsVisible(true);
+      // Open the credentials section
+      setIsCredentialsOpen(true);
       
-      // Automatically update code after a short delay
+      // Force code update on language selection
       setTimeout(() => {
-        handleUpdateCode(new Event('submit') as React.FormEvent);
+        // Create a synthetic form event
+        const event = { preventDefault: () => {} } as React.FormEvent;
+        handleUpdateCode(event);
       }, 200);
     };
     
