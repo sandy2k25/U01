@@ -16,11 +16,6 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Link href="/admin">
-              <div className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
-                <Settings className="h-5 w-5" />
-              </div>
-            </Link>
           </div>
         </header>
 
