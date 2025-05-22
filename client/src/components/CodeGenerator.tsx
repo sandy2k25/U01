@@ -177,12 +177,26 @@ export default function CodeGenerator() {
       const handleFileIdInput = (e: Event) => {
         const value = (e.target as HTMLInputElement).value;
         setFileId(value);
+        
+        // Auto-update code after a small delay to avoid excessive updates
+        if (value && apiKey) {
+          // Create a synthetic form event
+          const event = { preventDefault: () => {} } as React.FormEvent;
+          handleUpdateCode(event);
+        }
       };
       
       // Listen for input events on apiKey input
       const handleApiKeyInput = (e: Event) => {
         const value = (e.target as HTMLInputElement).value;
         setApiKey(value);
+        
+        // Auto-update code after a small delay to avoid excessive updates
+        if (value && fileId) {
+          // Create a synthetic form event
+          const event = { preventDefault: () => {} } as React.FormEvent;
+          handleUpdateCode(event);
+        }
       };
       
       fileIdInput.addEventListener('input', handleFileIdInput);
@@ -193,7 +207,7 @@ export default function CodeGenerator() {
         apiKeyInput.removeEventListener('input', handleApiKeyInput);
       };
     }
-  }, []);
+  }, [fileId, apiKey]);
 
   // Add flash animation style
   useEffect(() => {
