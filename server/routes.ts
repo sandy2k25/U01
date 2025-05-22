@@ -67,9 +67,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Decode the token (which is base64 encoded)
-        console.log("Attempting to decode token:", typeof token);
-        const streamUrl = Buffer.from(token as string, 'base64').toString('utf-8');
+        // Decode the token using the multi-step process that matches client-side encryption
+        console.log("Attempting to decode secure token");
+        
+        // Step 1: Restore the Base64 standard format by replacing URL-safe characters
+        let normalizedToken = (token as string)
+          .replace(/-/g, '+')
+          .replace(/_/g, '/');
+        
+        // Add back padding if needed
+        while (normalizedToken.length % 4) {
+          normalizedToken += '=';
+        }
+        
+        // Step 2: Decode the first layer of Base64
+        const obfuscatedData = Buffer.from(normalizedToken, 'base64').toString('binary');
+        
+        // Step 3: Reverse the XOR obfuscation with the same rotating key
+        const securityKey = "S3cur3Str3am1ngK3y";
+        let decodedData = "";
+        
+        for (let i = 0; i < obfuscatedData.length; i++) {
+          const charCode = obfuscatedData.charCodeAt(i);
+          const keyChar = securityKey.charCodeAt(i % securityKey.length);
+          decodedData += String.fromCharCode(charCode ^ keyChar);
+        }
+        
+        // Step 4: Decode the Base64 JSON data
+        const jsonData = Buffer.from(decodedData, 'base64').toString('utf-8');
+        
+        // Step 5: Parse the JSON to get the stream URL and check expiry
+        const metaData = JSON.parse(jsonData);
+        
+        // Validate expiry time
+        const currentTime = Date.now();
+        if (metaData.expires && metaData.expires < currentTime) {
+          throw new Error("Stream URL has expired");
+        }
+        
+        // Extract the actual stream URL
+        const streamUrl = metaData.stream;
+        
+        if (!streamUrl) {
+          throw new Error("No stream URL found in token");
+        }
+        
         console.log("Successfully decoded stream URL:", streamUrl ? "URL found" : "Empty URL");
         
         // Send an HTML5 video player with enhanced features that uses the decoded URL
