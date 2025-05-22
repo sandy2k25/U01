@@ -269,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .additional-controls {
                 position: absolute;
                 top: 0;
-                right: 20px;
+                right: 180px; /* Adjusted to avoid overlap with quality selector */
                 padding: 15px 0;
                 z-index: 10;
                 display: flex;
@@ -1019,7 +1019,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .quality-selector {
                 position: absolute;
                 top: 20px;
-                right: 20px;
+                right: 80px; /* Moved further to the left to avoid overlap */
                 z-index: 15;
                 opacity: 0;
                 transition: opacity 0.5s ease;
