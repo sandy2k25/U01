@@ -37,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).send(`
           <html>
             <head>
-              <title>Error - Premium Secure Player</title>
+              <title>Error - WovIe Player</title>
               <style>
                 body { 
                   font-family: Arial, sans-serif; 
@@ -121,9 +121,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Premium Secure Player</title>
+            <title>WovIe Player</title>
             <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+            <!-- Google Cast SDK -->
+            <script type="text/javascript" src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
             <style>
               * { margin: 0; padding: 0; box-sizing: border-box; }
               
@@ -164,44 +166,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 border-radius: 12px;
                 background: #000;
                 overflow: hidden;
+                cursor: none;
               }
               
-              .advanced-controls {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                display: flex;
-                justify-content: space-between;
-                padding: 15px 20px;
-                background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
-                z-index: 10;
-                opacity: 0;
-                transition: opacity 0.3s ease;
+              .player-container:hover {
+                cursor: default;
               }
               
-              .player-container:hover .advanced-controls,
-              .player-container:hover .player-info {
+              .player-container.controls-visible .player-info,
+              .player-container.controls-visible .custom-controls,
+              .player-container.controls-visible .volume-container,
+              .player-container.controls-visible .fullscreen-btn,
+              .player-container.controls-visible .settings-container,
+              .player-container.controls-visible .custom-progress-container {
                 opacity: 1;
-              }
-              
-              .player-branding {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-              }
-              
-              .player-logo {
-                background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-                width: 36px;
-                height: 36px;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-                font-size: 20px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                pointer-events: auto;
               }
               
               /* Audio visualization effect */
@@ -219,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 transition: opacity 0.5s ease;
               }
               
-              .player-container:hover .audio-visualizer {
+              .player-container.controls-visible .audio-visualizer {
                 opacity: 0.7;
               }
               
@@ -230,57 +209,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 transition: height 0.1s ease;
               }
               
-              .feature-buttons {
-                display: flex;
-                gap: 10px;
-              }
-              
-              .feature-button {
-                background: rgba(255,255,255,0.15);
-                border: none;
-                color: white;
-                width: 36px;
-                height: 36px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                backdrop-filter: blur(4px);
-              }
-              
-              .feature-button:hover {
-                background: rgba(255,255,255,0.25);
-                transform: translateY(-2px);
-              }
-              
-              .feature-button.active {
-                background: var(--highlight-color);
-                box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
-              }
-              
-              .plyr {
-                height: 100%;
+              video {
                 width: 100%;
-                border-radius: 12px;
-                overflow: hidden;
-              }
-              
-              /* Hide the default Plyr controls */
-              .plyr__controls {
-                display: none !important;
+                height: 100%;
+                object-fit: cover;
               }
               
               /* Animated progress bar */
-              .custom-progress-bar {
+              .custom-progress-container {
                 position: absolute;
                 bottom: 0;
                 left: 0;
                 right: 0;
+                height: 20px;
+                background: transparent;
+                z-index: 10;
+                opacity: 0;
+                transition: opacity 0.5s ease;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                pointer-events: none;
+              }
+              
+              .custom-progress-bar {
+                width: 95%;
                 height: 5px;
                 background: rgba(255,255,255,0.2);
-                z-index: 10;
+                border-radius: 2.5px;
+                overflow: hidden;
+                position: relative;
+                pointer-events: auto;
               }
               
               .progress-fill {
@@ -289,7 +249,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 background: linear-gradient(90deg, 
                   rgba(139, 92, 246, 0.7) 0%, 
                   rgba(139, 92, 246, 1) 100%);
+                position: absolute;
+                top: 0;
+                left: 0;
                 transition: width 0.1s linear;
+              }
+              
+              .progress-hover {
+                position: absolute;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 0;
+                background: rgba(255, 255, 255, 0.2);
+                transform-origin: left;
+                transform: scaleX(0);
+                transition: transform 0.1s ease;
+              }
+              
+              .progress-handle {
+                position: absolute;
+                top: 50%;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: var(--highlight-color);
+                transform: translate(-50%, -50%) scale(0);
+                transition: transform 0.1s ease;
+                left: 0%;
+                z-index: 2;
+                box-shadow: 0 0 5px rgba(0,0,0,0.5);
+              }
+              
+              .player-container.controls-visible .custom-progress-container:hover .progress-handle {
+                transform: translate(-50%, -50%) scale(1);
+              }
+              
+              .player-container.controls-visible .custom-progress-container:hover .custom-progress-bar {
+                height: 8px;
+              }
+              
+              .buffered-bar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.1);
+                width: 0%;
               }
               
               /* Enhanced play button with animation */
@@ -364,43 +370,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 100% { filter: drop-shadow(0 0 2px rgba(139, 92, 246, 0.3)); }
               }
               
-              .watermark {
+              /* WovIe Player Logo */
+              .wovie-logo {
                 position: absolute;
-                bottom: 80px;
-                right: 20px;
-                font-size: 14px;
-                padding: 6px 12px;
-                background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 24px;
+                font-weight: 700;
+                padding: 10px 20px;
+                background: linear-gradient(135deg, #8b5cf6, #6d28d9);
                 color: white;
-                border-radius: 6px;
-                z-index: 5;
+                border-radius: 12px;
+                z-index: 15;
                 pointer-events: none;
                 user-select: none;
-                opacity: 0.8;
-                transform: translateY(0);
-                transition: transform 0.3s ease, opacity 0.3s ease;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.4);
-                animation: float 3s ease-in-out infinite;
+                opacity: 0;
+                transition: opacity 0.5s ease, transform 0.5s ease;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+                text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                letter-spacing: 1px;
+                animation: float 3s ease-in-out infinite, glow 2s ease-in-out infinite;
               }
               
-              .player-container:hover .watermark {
-                transform: translateY(-20px);
-                opacity: 0.95;
-                animation: float 3s ease-in-out infinite, glow 2s ease-in-out infinite;
+              .wovie-logo span {
+                color: #f3f4f6;
+                font-weight: 400;
+              }
+              
+              .player-container.controls-visible .wovie-logo {
+                opacity: 1;
               }
               
               .player-info {
                 position: absolute;
-                bottom: 10px;
+                bottom: 20px;
                 left: 0;
                 right: 0;
                 padding: 10px 20px;
                 z-index: 5;
                 opacity: 0;
-                transition: opacity 0.3s ease;
+                transition: opacity 0.5s ease;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                pointer-events: none;
               }
               
               .stream-info {
@@ -589,6 +603,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 backdrop-filter: blur(4px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 transform-origin: left center;
+                opacity: 0;
+                transition: opacity 0.5s ease;
+              }
+              
+              .player-container.controls-visible .premium-tag {
+                opacity: 1;
               }
               
               .premium-tag:hover {
@@ -627,7 +647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               /* Custom control buttons to ensure they work properly */
               .custom-controls {
                 position: absolute;
-                bottom: 50px;
+                bottom: 30px;
                 left: 0;
                 right: 0;
                 display: flex;
@@ -636,11 +656,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 gap: 20px;
                 z-index: 15;
                 opacity: 0;
-                transition: opacity 0.3s ease;
-              }
-              
-              .player-container:hover .custom-controls {
-                opacity: 1;
+                transition: opacity 0.5s ease;
+                pointer-events: none;
               }
               
               .control-btn {
@@ -656,6 +673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 cursor: pointer;
                 transition: all 0.2s ease;
                 box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                pointer-events: auto;
               }
               
               .control-btn:hover {
@@ -673,11 +691,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               /* Settings menu */
               .settings-container {
                 position: absolute;
-                bottom: 50px;
+                bottom: 40px;
                 right: 20px;
                 z-index: 15;
                 opacity: 0;
-                transition: opacity 0.3s ease;
+                transition: opacity 0.5s ease;
+                pointer-events: none;
               }
               
               .player-container:hover .settings-container {
@@ -697,6 +716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 cursor: pointer;
                 transition: all 0.2s ease;
                 box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                pointer-events: auto;
               }
               
               .settings-btn:hover {
@@ -710,7 +730,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 right: 0;
                 background: rgba(31, 41, 55, 0.95);
                 border-radius: 8px;
-                width: 200px;
+                width: 220px;
                 padding: 10px 0;
                 backdrop-filter: blur(10px);
                 box-shadow: 0 10px 25px rgba(0,0,0,0.3);
@@ -719,6 +739,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 transform: scale(0.9);
                 transition: transform 0.2s ease, opacity 0.2s ease;
                 opacity: 0;
+                pointer-events: auto;
+                max-height: 80vh;
+                overflow-y: auto;
               }
               
               .settings-menu.visible {
@@ -756,16 +779,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 font-size: 13px;
               }
               
+              .settings-feature {
+                padding: 8px 15px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+              }
+              
+              .settings-feature:hover {
+                background: rgba(255,255,255,0.1);
+              }
+              
+              .settings-feature i {
+                margin-right: 10px;
+                width: 16px;
+                text-align: center;
+              }
+              
+              .settings-feature span {
+                font-size: 13px;
+                flex-grow: 1;
+              }
+              
+              .settings-feature.active {
+                color: var(--highlight-color);
+              }
+              
+              .submenu-icon {
+                margin-left: 5px;
+                opacity: 0.7;
+                font-size: 12px;
+              }
+              
+              .settings-submenu {
+                position: absolute;
+                bottom: 0;
+                right: 230px;
+                background: rgba(31, 41, 55, 0.95);
+                border-radius: 8px;
+                width: 180px;
+                padding: 10px 0;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                display: none;
+                transform-origin: bottom right;
+                transform: scale(0.9);
+                transition: transform 0.2s ease, opacity 0.2s ease;
+                opacity: 0;
+              }
+              
+              .settings-submenu.visible {
+                display: block;
+                transform: scale(1);
+                opacity: 1;
+              }
+              
+              .settings-submenu h4 {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+              }
+              
+              .back-button {
+                background: transparent;
+                border: none;
+                color: rgba(255,255,255,0.7);
+                cursor: pointer;
+                font-size: 14px;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                transition: color 0.2s ease;
+              }
+              
+              .back-button:hover {
+                color: white;
+              }
+              
               .volume-container {
                 position: absolute;
-                bottom: 50px;
+                bottom: 40px;
                 left: 20px;
                 z-index: 15;
                 opacity: 0;
-                transition: opacity 0.3s ease;
+                transition: opacity 0.5s ease;
                 display: flex;
                 align-items: center;
                 gap: 10px;
+                pointer-events: none;
               }
               
               .player-container:hover .volume-container {
@@ -785,6 +888,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 cursor: pointer;
                 transition: all 0.2s ease;
                 box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                pointer-events: auto;
               }
               
               .volume-btn:hover {
@@ -800,9 +904,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 position: relative;
                 overflow: hidden;
                 transition: width 0.3s ease;
+                pointer-events: auto;
               }
               
-              .volume-container:hover .volume-slider {
+              .player-container.controls-visible .volume-container:hover .volume-slider {
                 width: 80px;
               }
               
@@ -819,7 +924,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               .fullscreen-btn {
                 position: absolute;
-                bottom: 50px;
+                bottom: 40px;
                 right: 70px;
                 background: rgba(0,0,0,0.6);
                 border: none;
@@ -835,6 +940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 box-shadow: 0 4px 10px rgba(0,0,0,0.3);
                 z-index: 15;
                 opacity: 0;
+                pointer-events: none;
               }
               
               .player-container:hover .fullscreen-btn {
@@ -845,35 +951,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 background: rgba(109, 40, 217, 0.8);
                 transform: scale(1.1);
               }
+              
+              /* Time preview on progress bar hover */
+              .time-preview {
+                position: absolute;
+                bottom: 15px;
+                background: rgba(31, 41, 55, 0.9);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+                transform: translateX(-50%);
+                z-index: 11;
+              }
+              
+              .player-container.controls-visible .custom-progress-container:hover .time-preview {
+                opacity: 1;
+              }
+              
+              /* Toast notification for features */
+              .toast-notification {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%) translateY(100px);
+                background: rgba(31, 41, 55, 0.9);
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                z-index: 100;
+                transition: transform 0.5s ease;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 14px;
+              }
+              
+              .toast-notification.visible {
+                transform: translateX(-50%) translateY(0);
+              }
+              
+              /* Fullscreen mode in landscape */
+              @media screen and (max-width: 768px) {
+                .player-container.landscape-active {
+                  max-width: 100%;
+                  width: 100%;
+                  height: 100vh;
+                  position: fixed;
+                  top: 0;
+                  left: 0;
+                  right: 0;
+                  bottom: 0;
+                  border-radius: 0;
+                  aspect-ratio: unset;
+                }
+              }
             </style>
           </head>
           <body>
             <div class="cinema-mode-overlay"></div>
-            <div class="player-container">
+            <div class="player-container" id="playerContainer">
               <div class="premium-tag">PREMIUM</div>
+              
+              <!-- WovIe Player Logo -->
+              <div class="wovie-logo">
+                WovIe <span>Player</span>
+              </div>
               
               <div class="audio-visualizer" id="audioVisualizer">
                 <!-- Audio bars will be added dynamically -->
-              </div>
-            
-              <div class="advanced-controls">
-                <div class="player-branding">
-                  <div class="player-logo">W</div>
-                </div>
-                <div class="feature-buttons">
-                  <button class="feature-button" id="statsToggle" title="Show Stream Stats">
-                    <i class="fas fa-chart-bar"></i>
-                  </button>
-                  <button class="feature-button" id="screenshotBtn" title="Take Screenshot">
-                    <i class="fas fa-camera"></i>
-                  </button>
-                  <button class="feature-button" id="cinemaMode" title="Cinema Mode">
-                    <i class="fas fa-film"></i>
-                  </button>
-                  <button class="feature-button" id="showHotkeys" title="Keyboard Shortcuts">
-                    <i class="fas fa-keyboard"></i>
-                  </button>
-                </div>
               </div>
               
               <!-- Custom controls that work properly -->
@@ -904,34 +1054,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 <i class="fas fa-expand" id="fullscreenIcon"></i>
               </div>
               
-              <!-- Settings menu -->
+              <!-- Settings menu with all features included -->
               <div class="settings-container">
                 <button class="settings-btn" id="settingsBtn">
                   <i class="fas fa-cog"></i>
                 </button>
                 <div class="settings-menu" id="settingsMenu">
+                  <!-- Features section -->
+                  <h4>Features</h4>
+                  <div class="settings-feature" id="featureCast">
+                    <i class="fas fa-cast"></i>
+                    <span>Cast to TV</span>
+                  </div>
+                  <div class="settings-feature" id="featurePip">
+                    <i class="fas fa-clone"></i>
+                    <span>Picture-in-Picture</span>
+                  </div>
+                  <div class="settings-feature" id="featureLandscape">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>Landscape Mode</span>
+                  </div>
+                  <div class="settings-feature" id="featureCinema">
+                    <i class="fas fa-film"></i>
+                    <span>Cinema Mode</span>
+                  </div>
+                  <div class="settings-feature" id="featureScreenshot">
+                    <i class="fas fa-camera"></i>
+                    <span>Take Screenshot</span>
+                  </div>
+                  <div class="settings-feature" id="featureStats">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Show Statistics</span>
+                  </div>
+                  <div class="settings-feature" id="featureHotkeys">
+                    <i class="fas fa-keyboard"></i>
+                    <span>Keyboard Shortcuts</span>
+                  </div>
+                  
+                  <!-- Playback speed section -->
+                  <h4>Playback Speed</h4>
+                  <div class="settings-option" data-speed="0.25">
+                    <span>0.25x</span>
+                  </div>
+                  <div class="settings-option" data-speed="0.5">
+                    <span>0.5x</span>
+                  </div>
+                  <div class="settings-option" data-speed="0.75">
+                    <span>0.75x</span>
+                  </div>
+                  <div class="settings-option active" data-speed="1">
+                    <span>1x (Normal)</span>
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <div class="settings-option" data-speed="1.25">
+                    <span>1.25x</span>
+                  </div>
+                  <div class="settings-option" data-speed="1.5">
+                    <span>1.5x</span>
+                  </div>
+                  <div class="settings-option" data-speed="1.75">
+                    <span>1.75x</span>
+                  </div>
+                  <div class="settings-option" data-speed="2">
+                    <span>2x</span>
+                  </div>
+                  
+                  <!-- Quality section -->
                   <h4>Quality</h4>
                   <div class="settings-option active" data-quality="auto">
                     <span>Auto</span>
                     <i class="fas fa-check"></i>
                   </div>
                   <!-- Quality options will be added dynamically -->
-                  
-                  <h4>Playback Speed</h4>
-                  <div class="settings-option" data-speed="0.5">
-                    <span>0.5x</span>
-                  </div>
-                  <div class="settings-option active" data-speed="1">
-                    <span>1x (Normal)</span>
-                    <i class="fas fa-check"></i>
-                  </div>
-                  <div class="settings-option" data-speed="1.5">
-                    <span>1.5x</span>
-                  </div>
-                  <div class="settings-option" data-speed="2">
-                    <span>2x</span>
-                  </div>
                 </div>
+              </div>
+              
+              <!-- Custom progress bar -->
+              <div class="custom-progress-container" id="customProgressContainer">
+                <div class="custom-progress-bar" id="customProgressBar">
+                  <div class="buffered-bar" id="bufferedBar"></div>
+                  <div class="progress-fill" id="progressFill"></div>
+                  <div class="progress-hover" id="progressHover"></div>
+                  <div class="progress-handle" id="progressHandle"></div>
+                </div>
+                <div class="time-preview" id="timePreview">00:00</div>
               </div>
               
               <div class="loading">
@@ -939,20 +1145,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 <span id="loading-text">Loading secure stream...</span>
               </div>
               
-              <div class="watermark">
-                <i class="fas fa-shield-alt"></i> Premium Player
-              </div>
-              
               <div class="player-info">
                 <div class="stream-info">
                   <div class="stream-quality" id="current-quality">Auto</div>
                   <div class="time-info" id="current-time">00:00 / 00:00</div>
                 </div>
-              </div>
-              
-              <!-- Custom Progress Bar -->
-              <div class="custom-progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
               </div>
               
               <video id="player" crossorigin playsinline></video>
@@ -1024,10 +1221,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   <span>Toggle Stats</span>
                   <span class="hotkey-keys">I</span>
                 </div>
+                <div class="hotkey-row">
+                  <span>Picture-in-Picture</span>
+                  <span class="hotkey-keys">P</span>
+                </div>
               </div>
               
               <div class="screenshot-notification" id="screenshotNotification">
                 <i class="fas fa-check-circle"></i> Screenshot saved to your downloads
+              </div>
+              
+              <div class="toast-notification" id="toastNotification">
+                <i class="fas fa-info-circle"></i> <span id="toastMessage"></span>
               </div>
             </div>
             
@@ -1040,23 +1245,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const loading = document.querySelector('.loading');
                 const loadingText = document.getElementById('loading-text');
                 const statsPanel = document.getElementById('statsPanel');
-                const statsToggle = document.getElementById('statsToggle');
-                const screenshotBtn = document.getElementById('screenshotBtn');
-                const screenshotNotification = document.getElementById('screenshotNotification');
                 const hotkeysPanel = document.getElementById('hotkeysPanel');
-                const showHotkeys = document.getElementById('showHotkeys');
                 const closeHotkeys = document.getElementById('closeHotkeys');
-                const cinemaMode = document.getElementById('cinemaMode');
                 const currentQuality = document.getElementById('current-quality');
                 const currentTime = document.getElementById('current-time');
                 const body = document.body;
+                const playerContainer = document.getElementById('playerContainer');
+                const toastNotification = document.getElementById('toastNotification');
+                const toastMessage = document.getElementById('toastMessage');
+                const screenshotNotification = document.getElementById('screenshotNotification');
+                
+                // Feature buttons in settings menu
+                const featureCast = document.getElementById('featureCast');
+                const featurePip = document.getElementById('featurePip');
+                const featureLandscape = document.getElementById('featureLandscape');
+                const featureCinema = document.getElementById('featureCinema');
+                const featureScreenshot = document.getElementById('featureScreenshot');
+                const featureStats = document.getElementById('featureStats');
+                const featureHotkeys = document.getElementById('featureHotkeys');
                 
                 // Custom controls
                 const playBtn = document.getElementById('playBtn');
                 const playIcon = document.getElementById('playIcon');
                 const rewindBtn = document.getElementById('rewindBtn');
                 const forwardBtn = document.getElementById('forwardBtn');
+                
+                // Progress bar elements
+                const customProgressContainer = document.getElementById('customProgressContainer');
+                const customProgressBar = document.getElementById('customProgressBar');
                 const progressFill = document.getElementById('progressFill');
+                const progressHover = document.getElementById('progressHover');
+                const progressHandle = document.getElementById('progressHandle');
+                const timePreview = document.getElementById('timePreview');
+                const bufferedBar = document.getElementById('bufferedBar');
                 
                 // Volume control
                 const volumeBtn = document.getElementById('volumeBtn');
@@ -1075,17 +1296,520 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 let statsInterval;
                 let isMuted = false;
                 let volume = 0.75; // Default volume (75%)
+                let isDragging = false;
+                let controlsVisible = true;
+                let controlsTimeout;
+                let lastMouseMoveTime = Date.now();
+                let isLandscapeMode = false;
+                let castSession = null;
+                
+                // Show toast message
+                function showToast(message, duration = 3000) {
+                  toastMessage.textContent = message;
+                  toastNotification.classList.add('visible');
+                  
+                  setTimeout(() => {
+                    toastNotification.classList.remove('visible');
+                  }, duration);
+                }
+                
+                // Auto-hide controls functionality
+                function showControls() {
+                  playerContainer.classList.add('controls-visible');
+                  controlsVisible = true;
+                  document.body.style.cursor = 'default';
+                  clearTimeout(controlsTimeout);
+                  
+                  // Set timeout to hide controls after inactivity
+                  controlsTimeout = setTimeout(() => {
+                    if (!video.paused) {
+                      hideControls();
+                    }
+                  }, 3000); // Hide after 3 seconds of inactivity
+                }
+                
+                function hideControls() {
+                  // Don't hide if video is paused or settings menu is open
+                  if (video.paused || settingsMenu.classList.contains('visible') ||
+                      hotkeysPanel.classList.contains('visible') || 
+                      statsPanel.classList.contains('visible')) {
+                    return;
+                  }
+                  
+                  playerContainer.classList.remove('controls-visible');
+                  controlsVisible = false;
+                  document.body.style.cursor = 'none';
+                }
+                
+                // Setup mouse movement to show controls
+                playerContainer.addEventListener('mousemove', function() {
+                  lastMouseMoveTime = Date.now();
+                  if (!controlsVisible) {
+                    showControls();
+                  } else {
+                    // Reset the auto-hide timer
+                    clearTimeout(controlsTimeout);
+                    controlsTimeout = setTimeout(() => {
+                      if (!video.paused) {
+                        hideControls();
+                      }
+                    }, 3000);
+                  }
+                });
+                
+                // Show controls on mouse enter
+                playerContainer.addEventListener('mouseenter', showControls);
+                
+                // Prevent hiding when over controls
+                document.querySelectorAll('.control-btn, .volume-btn, .settings-btn, .fullscreen-btn').forEach(el => {
+                  el.addEventListener('mouseenter', () => {
+                    clearTimeout(controlsTimeout);
+                  });
+                });
+                
+                // Always show controls when video is paused
+                video.addEventListener('pause', showControls);
+                
+                // Hide controls a few seconds after playing starts
+                video.addEventListener('play', () => {
+                  clearTimeout(controlsTimeout);
+                  controlsTimeout = setTimeout(() => {
+                    hideControls();
+                  }, 3000);
+                });
+                
+                // Implement feature: Chromecast
+                function initializeCastApi() {
+                  if (!window.chrome || !window.chrome.cast || !window.chrome.cast.isAvailable) {
+                    setTimeout(initializeCastApi, 1000);
+                    return;
+                  }
+                  
+                  const applicationID = chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
+                  const sessionRequest = new chrome.cast.SessionRequest(applicationID);
+                  const apiConfig = new chrome.cast.ApiConfig(
+                    sessionRequest,
+                    sessionListener,
+                    receiverListener
+                  );
+                  
+                  chrome.cast.initialize(apiConfig, onInitSuccess, onInitError);
+                  
+                  // Add click event to cast button
+                  featureCast.addEventListener('click', function() {
+                    if (castSession) {
+                      // If already casting, stop casting
+                      castSession.stop();
+                      castSession = null;
+                      featureCast.classList.remove('active');
+                      showToast('Disconnected from Chromecast');
+                    } else {
+                      // Start casting
+                      chrome.cast.requestSession(
+                        function(session) {
+                          onRequestSessionSuccess(session);
+                        },
+                        onRequestSessionError
+                      );
+                    }
+                    showControls();
+                  });
+                }
+                
+                function sessionListener(session) {
+                  castSession = session;
+                  featureCast.classList.add('active');
+                  
+                  if (session.media.length) {
+                    onMediaDiscovered('onRequestSessionSuccess', session.media[0]);
+                  }
+                }
+                
+                function receiverListener(availability) {
+                  if (availability === chrome.cast.ReceiverAvailability.AVAILABLE) {
+                    featureCast.style.display = 'flex';
+                  } else {
+                    featureCast.style.display = 'none';
+                  }
+                }
+                
+                function onInitSuccess() {
+                  console.log('Cast API initialized successfully');
+                }
+                
+                function onInitError(error) {
+                  console.error('Cast API initialization error:', error);
+                  featureCast.style.display = 'none';
+                }
+                
+                function onRequestSessionSuccess(session) {
+                  castSession = session;
+                  featureCast.classList.add('active');
+                  
+                  const mediaInfo = new chrome.cast.media.MediaInfo(source, 'application/x-mpegURL');
+                  const request = new chrome.cast.media.LoadRequest(mediaInfo);
+                  
+                  castSession.loadMedia(request, 
+                    function(media) {
+                      console.log('Cast media loaded successfully');
+                      showToast('Connected to Chromecast');
+                      
+                      // Pause local playback
+                      if (!video.paused) {
+                        video.pause();
+                      }
+                      
+                      media.addUpdateListener(function(isAlive) {
+                        if (!isAlive) {
+                          // If media session is dead, reset casting UI
+                          castSession = null;
+                          featureCast.classList.remove('active');
+                        }
+                      });
+                    }, 
+                    function(error) {
+                      console.error('Cast media load error:', error);
+                      showToast('Failed to connect to Chromecast');
+                      castSession = null;
+                      featureCast.classList.remove('active');
+                    }
+                  );
+                }
+                
+                function onRequestSessionError(error) {
+                  console.error('Cast session request error:', error);
+                  showToast('Chromecast connection failed');
+                }
+                
+                function onMediaDiscovered(how, media) {
+                  // Store the media for later control
+                  currentMedia = media;
+                }
+                
+                // Implement feature: Picture-in-Picture
+                function setupPictureInPicture() {
+                  // Check if Picture-in-Picture is supported
+                  if (document.pictureInPictureEnabled || 
+                      (video.webkitSupportsPresentationMode && typeof video.webkitSetPresentationMode === 'function')) {
+                    featurePip.style.display = 'flex';
+                    
+                    featurePip.addEventListener('click', function() {
+                      togglePictureInPicture();
+                      showControls();
+                    });
+                    
+                    // Also add keyboard shortcut for PiP (p key)
+                    document.addEventListener('keydown', function(e) {
+                      if (e.key === 'p' || e.key === 'P') {
+                        if (document.activeElement === document.body) {
+                          togglePictureInPicture();
+                          showControls();
+                        }
+                      }
+                    });
+                    
+                    // Update active state when entering/exiting PiP mode
+                    video.addEventListener('enterpictureinpicture', function() {
+                      featurePip.classList.add('active');
+                    });
+                    
+                    video.addEventListener('leavepictureinpicture', function() {
+                      featurePip.classList.remove('active');
+                    });
+                  } else {
+                    // Hide PiP button if not supported
+                    featurePip.style.display = 'none';
+                  }
+                }
+                
+                function togglePictureInPicture() {
+                  try {
+                    if (document.pictureInPictureElement) {
+                      // Exit Picture-in-Picture mode
+                      document.exitPictureInPicture()
+                        .then(() => {
+                          showToast('Exited Picture-in-Picture mode');
+                          featurePip.classList.remove('active');
+                        })
+                        .catch(error => {
+                          console.error('Error exiting Picture-in-Picture mode:', error);
+                          showToast('Failed to exit Picture-in-Picture mode');
+                        });
+                    } else if (video.webkitSupportsPresentationMode && 
+                              typeof video.webkitSetPresentationMode === 'function') {
+                      // Safari specific implementation
+                      video.webkitSetPresentationMode(
+                        video.webkitPresentationMode === 'picture-in-picture' ? 
+                          'inline' : 'picture-in-picture'
+                      );
+                      
+                      if (video.webkitPresentationMode === 'picture-in-picture') {
+                        featurePip.classList.add('active');
+                        showToast('Entered Picture-in-Picture mode');
+                      } else {
+                        featurePip.classList.remove('active');
+                        showToast('Exited Picture-in-Picture mode');
+                      }
+                    } else if (document.pictureInPictureEnabled) {
+                      // Standard implementation for other browsers
+                      video.requestPictureInPicture()
+                        .then(() => {
+                          featurePip.classList.add('active');
+                          showToast('Entered Picture-in-Picture mode');
+                        })
+                        .catch(error => {
+                          console.error('Error entering Picture-in-Picture mode:', error);
+                          showToast('Failed to enter Picture-in-Picture mode');
+                        });
+                    } else {
+                      showToast('Picture-in-Picture mode not supported in this browser');
+                    }
+                  } catch (error) {
+                    console.error('PiP error:', error);
+                    showToast('Picture-in-Picture error: ' + error.message);
+                  }
+                }
+                
+                // Implement feature: Landscape Mode
+                function setupLandscapeMode() {
+                  featureLandscape.addEventListener('click', function() {
+                    toggleLandscapeMode();
+                    showControls();
+                  });
+                  
+                  // Manual implementation for landscape mode
+                  function toggleLandscapeMode() {
+                    if (isLandscapeMode) {
+                      // Exit landscape mode
+                      playerContainer.classList.remove('landscape-active');
+                      featureLandscape.classList.remove('active');
+                      document.body.style.overflow = '';
+                      
+                      // Exit fullscreen if we're in it
+                      if (document.fullscreenElement) {
+                        document.exitFullscreen().catch(err => {
+                          console.error("Error exiting fullscreen:", err);
+                        });
+                      }
+                      
+                      isLandscapeMode = false;
+                      showToast('Exited landscape mode');
+                      
+                    } else {
+                      // Enter landscape mode
+                      playerContainer.classList.add('landscape-active');
+                      featureLandscape.classList.add('active');
+                      document.body.style.overflow = 'hidden';
+                      
+                      // Request fullscreen for better landscape experience
+                      if (playerContainer.requestFullscreen) {
+                        playerContainer.requestFullscreen().catch(err => {
+                          // Fullscreen may be rejected on some devices without user gesture
+                          console.warn("Fullscreen request was rejected:", err);
+                        });
+                      }
+                      
+                      isLandscapeMode = true;
+                      showToast('Entered landscape mode');
+                      
+                      // Try to force orientation on mobile - this will likely fail without permission,
+                      // but we'll handle it gracefully 
+                      if (screen.orientation && typeof screen.orientation.lock === 'function') {
+                        screen.orientation.lock('landscape').catch(err => {
+                          console.warn("Screen orientation lock failed:", err);
+                          // Don't show this error to user as we have a fallback with CSS
+                        });
+                      }
+                    }
+                  }
+                  
+                  // Listen for orientation changes
+                  if (window.matchMedia) {
+                    const mediaQuery = window.matchMedia("(orientation: landscape)");
+                    
+                    const handleOrientationChange = (e) => {
+                      if (e.matches) {
+                        // Landscape orientation detected
+                        if (isLandscapeMode) {
+                          // Already in landscape mode - do nothing
+                        } else {
+                          // Auto enable landscape mode
+                          if (document.fullscreenElement) {
+                            // Only auto-enable if we're in fullscreen
+                            isLandscapeMode = true;
+                            playerContainer.classList.add('landscape-active');
+                            featureLandscape.classList.add('active');
+                          }
+                        }
+                      } else {
+                        // Portrait orientation detected
+                        if (isLandscapeMode) {
+                          // Auto disable landscape mode
+                          playerContainer.classList.remove('landscape-active');
+                          featureLandscape.classList.remove('active');
+                          isLandscapeMode = false;
+                        }
+                      }
+                    };
+                    
+                    // Add listener for orientation change
+                    mediaQuery.addEventListener("change", handleOrientationChange);
+                    
+                    // Check initial orientation
+                    handleOrientationChange(mediaQuery);
+                  }
+                  
+                  // Handle fullscreen change events
+                  document.addEventListener('fullscreenchange', function() {
+                    if (!document.fullscreenElement && isLandscapeMode) {
+                      // If exiting fullscreen while in landscape mode, exit landscape mode too
+                      playerContainer.classList.remove('landscape-active');
+                      featureLandscape.classList.remove('active');
+                      document.body.style.overflow = '';
+                      isLandscapeMode = false;
+                    }
+                  });
+                }
+                
+                // Implement feature: Cinema Mode
+                function setupCinemaMode() {
+                  featureCinema.addEventListener('click', function() {
+                    toggleCinemaMode();
+                    showControls();
+                  });
+                  
+                  // Also add keyboard shortcut for cinema mode (c key)
+                  document.addEventListener('keydown', function(e) {
+                    if (e.key === 'c' || e.key === 'C') {
+                      if (document.activeElement === document.body) {
+                        toggleCinemaMode();
+                        showControls();
+                      }
+                    }
+                  });
+                }
+                
+                // Toggle cinema mode
+                function toggleCinemaMode() {
+                  body.classList.toggle('cinema-mode-active');
+                  featureCinema.classList.toggle('active');
+                  
+                  if (body.classList.contains('cinema-mode-active')) {
+                    showToast('Entered Cinema Mode');
+                  } else {
+                    showToast('Exited Cinema Mode');
+                  }
+                  
+                  // Reset inactivity timer
+                  showControls();
+                }
+                
+                // Implement feature: Screenshot
+                function setupScreenshot() {
+                  featureScreenshot.addEventListener('click', function() {
+                    takeScreenshot();
+                    showControls();
+                  });
+                  
+                  // Also add keyboard shortcut for screenshot (s key)
+                  document.addEventListener('keydown', function(e) {
+                    if (e.key === 's' || e.key === 'S') {
+                      if (document.activeElement === document.body) {
+                        takeScreenshot();
+                        showControls();
+                      }
+                    }
+                  });
+                }
+                
+                // Take screenshot function
+                function takeScreenshot() {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = video.videoWidth;
+                  canvas.height = video.videoHeight;
+                  
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                  
+                  try {
+                    const link = document.createElement('a');
+                    link.download = \`wovie-screenshot-\${new Date().getTime()}.jpg\`;
+                    link.href = canvas.toDataURL('image/jpeg', 0.8);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Show notification
+                    screenshotNotification.classList.add('visible');
+                    setTimeout(() => {
+                      screenshotNotification.classList.remove('visible');
+                    }, 3000);
+                  } catch (e) {
+                    console.error("Screenshot error:", e);
+                  }
+                  
+                  // Reset inactivity timer
+                  showControls();
+                }
+                
+                // Implement feature: Stats
+                function setupStats() {
+                  featureStats.addEventListener('click', function() {
+                    toggleStats();
+                    showControls();
+                  });
+                  
+                  // Also add keyboard shortcut for stats (i key)
+                  document.addEventListener('keydown', function(e) {
+                    if (e.key === 'i' || e.key === 'I') {
+                      if (document.activeElement === document.body) {
+                        toggleStats();
+                        showControls();
+                      }
+                    }
+                  });
+                }
                 
                 // Toggle stats panel
                 function toggleStats() {
                   statsPanel.classList.toggle('visible');
-                  statsToggle.classList.toggle('active');
+                  featureStats.classList.toggle('active');
                   
                   if (statsPanel.classList.contains('visible')) {
                     startStatsUpdates();
+                    showToast('Stream Statistics Enabled');
+                    showControls(); // Keep controls visible when stats are shown
                   } else {
                     clearInterval(statsInterval);
+                    showToast('Stream Statistics Disabled');
+                    
+                    // Hide controls if should be hidden
+                    if (!video.paused && Date.now() - lastMouseMoveTime > 3000) {
+                      hideControls();
+                    }
                   }
+                }
+                
+                // Implement feature: Keyboard Shortcuts
+                function setupHotkeys() {
+                  featureHotkeys.addEventListener('click', function() {
+                    hotkeysPanel.classList.add('visible');
+                    showControls();
+                    clearTimeout(controlsTimeout); // Prevent auto-hide
+                  });
+                  
+                  closeHotkeys.addEventListener('click', function() {
+                    hotkeysPanel.classList.remove('visible');
+                    showControls();
+                    
+                    // Start hide timer if video is playing
+                    if (!video.paused) {
+                      clearTimeout(controlsTimeout);
+                      controlsTimeout = setTimeout(() => {
+                        hideControls();
+                      }, 3000);
+                    }
+                  });
                 }
                 
                 // Start periodic stats updates
@@ -1139,62 +1863,171 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }, 1000);
                 }
                 
+                // Update buffered progress
+                function updateBufferedProgress() {
+                  if (!video || video.buffered.length === 0) return;
+                  
+                  const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+                  const duration = video.duration;
+                  const bufferedPercent = (bufferedEnd / duration) * 100;
+                  
+                  bufferedBar.style.width = \`\${bufferedPercent}%\`;
+                }
+                
                 // Update progress bar
                 function updateProgressBar() {
-                  if (!video) return;
+                  if (!video || isNaN(video.duration)) return;
                   const progress = (video.currentTime / video.duration) * 100;
                   progressFill.style.width = \`\${progress}%\`;
+                  progressHandle.style.left = \`\${progress}%\`;
+                  
+                  // Update buffered progress too
+                  updateBufferedProgress();
                 }
                 
-                // Take screenshot function
-                function takeScreenshot() {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = video.videoWidth;
-                  canvas.height = video.videoHeight;
+                // Format time (seconds to MM:SS)
+                function formatTime(seconds) {
+                  if (isNaN(seconds)) return "00:00";
                   
-                  const ctx = canvas.getContext('2d');
-                  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                  
-                  try {
-                    const link = document.createElement('a');
-                    link.download = \`premium-screenshot-\${new Date().getTime()}.jpg\`;
-                    link.href = canvas.toDataURL('image/jpeg', 0.8);
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                  seconds = Math.max(0, seconds);
+                  const minutes = Math.floor(seconds / 60);
+                  seconds = Math.floor(seconds % 60);
+                  return \`\${minutes.toString().padStart(2, '0')}:\${seconds.toString().padStart(2, '0')}\`;
+                }
+                
+                // Handle progress bar interactions
+                function setupProgressBar() {
+                  // Click on progress bar to seek
+                  customProgressBar.addEventListener('click', function(e) {
+                    if (!video || isNaN(video.duration)) return;
                     
-                    // Show notification
-                    screenshotNotification.classList.add('visible');
-                    setTimeout(() => {
-                      screenshotNotification.classList.remove('visible');
-                    }, 3000);
-                  } catch (e) {
-                    console.error("Screenshot error:", e);
+                    const rect = this.getBoundingClientRect();
+                    const pos = (e.clientX - rect.left) / rect.width;
+                    video.currentTime = pos * video.duration;
+                    updateProgressBar();
+                    
+                    // Reset inactivity timer
+                    showControls();
+                  });
+                  
+                  // Show hover effect and time preview
+                  customProgressContainer.addEventListener('mousemove', function(e) {
+                    if (!video || isNaN(video.duration)) return;
+                    
+                    const rect = customProgressBar.getBoundingClientRect();
+                    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    
+                    progressHover.style.transform = \`scaleX(\${pos})\`;
+                    
+                    const previewTime = pos * video.duration;
+                    timePreview.textContent = formatTime(previewTime);
+                    timePreview.style.left = \`\${pos * 100}%\`;
+                    
+                    // If dragging, update video time
+                    if (isDragging) {
+                      video.currentTime = previewTime;
+                      updateProgressBar();
+                    }
+                    
+                    // Reset inactivity timer
+                    showControls();
+                  });
+                  
+                  // Handle mouse down for drag-to-seek
+                  customProgressContainer.addEventListener('mousedown', function(e) {
+                    if (!video || isNaN(video.duration)) return;
+                    isDragging = true;
+                    
+                    // Add event listeners for drag
+                    document.addEventListener('mousemove', handleDrag);
+                    document.addEventListener('mouseup', handleDragEnd);
+                    
+                    // Initial seek
+                    const rect = customProgressBar.getBoundingClientRect();
+                    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    video.currentTime = pos * video.duration;
+                    updateProgressBar();
+                    
+                    // Reset inactivity timer
+                    showControls();
+                  });
+                  
+                  function handleDrag(e) {
+                    if (!isDragging || !video || isNaN(video.duration)) return;
+                    
+                    const rect = customProgressBar.getBoundingClientRect();
+                    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    
+                    // Update time preview
+                    timePreview.textContent = formatTime(pos * video.duration);
+                    timePreview.style.left = \`\${pos * 100}%\`;
+                    
+                    // Update progress
+                    progressFill.style.width = \`\${pos * 100}%\`;
+                    progressHandle.style.left = \`\${pos * 100}%\`;
+                    
+                    // Reset inactivity timer
+                    lastMouseMoveTime = Date.now();
                   }
-                }
-                
-                // Toggle cinema mode
-                function toggleCinemaMode() {
-                  body.classList.toggle('cinema-mode-active');
-                  cinemaMode.classList.toggle('active');
+                  
+                  function handleDragEnd(e) {
+                    if (!isDragging) return;
+                    
+                    const rect = customProgressBar.getBoundingClientRect();
+                    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    
+                    // Set video time
+                    if (!isNaN(video.duration)) {
+                      video.currentTime = pos * video.duration;
+                    }
+                    
+                    // End dragging
+                    isDragging = false;
+                    document.removeEventListener('mousemove', handleDrag);
+                    document.removeEventListener('mouseup', handleDragEnd);
+                    
+                    // Reset inactivity timer
+                    lastMouseMoveTime = Date.now();
+                    showControls();
+                  }
+                  
+                  // Hide hover effect when mouse leaves
+                  customProgressContainer.addEventListener('mouseleave', function() {
+                    progressHover.style.transform = 'scaleX(0)';
+                  });
                 }
                 
                 // Toggle settings menu
                 function toggleSettingsMenu() {
+                  const wasVisible = settingsMenu.classList.contains('visible');
                   settingsMenu.classList.toggle('visible');
+                  
+                  // Always show controls when settings menu is open
+                  if (settingsMenu.classList.contains('visible')) {
+                    showControls();
+                    clearTimeout(controlsTimeout); // Prevent auto-hide
+                  } else if (wasVisible && !video.paused) {
+                    // Start the hide timer when closing settings
+                    clearTimeout(controlsTimeout);
+                    controlsTimeout = setTimeout(() => {
+                      hideControls();
+                    }, 3000);
+                  }
                 }
                 
                 // Toggle fullscreen
                 function toggleFullscreen() {
+                  const container = document.querySelector('.player-container');
+                  
                   if (!document.fullscreenElement) {
-                    if (document.documentElement.requestFullscreen) {
-                      document.documentElement.requestFullscreen();
-                    } else if (document.documentElement.webkitRequestFullscreen) {
-                      document.documentElement.webkitRequestFullscreen();
-                    } else if (document.documentElement.mozRequestFullScreen) {
-                      document.documentElement.mozRequestFullScreen();
-                    } else if (document.documentElement.msRequestFullscreen) {
-                      document.documentElement.msRequestFullscreen();
+                    if (container.requestFullscreen) {
+                      container.requestFullscreen();
+                    } else if (container.webkitRequestFullscreen) {
+                      container.webkitRequestFullscreen();
+                    } else if (container.mozRequestFullScreen) {
+                      container.mozRequestFullScreen();
+                    } else if (container.msRequestFullscreen) {
+                      container.msRequestFullscreen();
                     }
                     fullscreenIcon.className = 'fas fa-compress';
                   } else {
@@ -1209,20 +2042,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }
                     fullscreenIcon.className = 'fas fa-expand';
                   }
+                  
+                  // Reset inactivity timer
+                  showControls();
                 }
                 
                 // Update time display
                 function updateTimeDisplay() {
-                  if (!video) return;
-                  
-                  const formatTime = (seconds) => {
-                    const mins = Math.floor(seconds / 60);
-                    const secs = Math.floor(seconds % 60);
-                    return \`\${mins.toString().padStart(2, '0')}:\${secs.toString().padStart(2, '0')}\`;
-                  };
+                  if (!video || isNaN(video.duration)) return;
                   
                   const current = formatTime(video.currentTime);
-                  const total = formatTime(video.duration || 0);
+                  const total = formatTime(video.duration);
                   
                   currentTime.textContent = \`\${current} / \${total}\`;
                   
@@ -1242,6 +2072,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     volumeLevel.style.transform = 'scaleX(0)';
                   }
                   isMuted = video.muted;
+                  
+                  // Reset inactivity timer
+                  showControls();
                 }
                 
                 // Set volume
@@ -1266,11 +2099,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       volumeIcon.className = 'fas fa-volume-up';
                     }
                   }
+                  
+                  // Reset inactivity timer
+                  showControls();
                 }
                 
                 // Change playback speed
                 function setPlaybackSpeed(speed) {
                   video.playbackRate = speed;
+                  showToast(\`Playback speed set to \${speed}x\`);
                   
                   // Update UI
                   document.querySelectorAll('.settings-option[data-speed]').forEach(option => {
@@ -1287,6 +2124,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       activeOption.appendChild(checkIcon);
                     }
                   }
+                  
+                  // Reset inactivity timer
+                  showControls();
                 }
                 
                 // Add ripple effect on click
@@ -1383,18 +2223,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       video.pause();
                     }
                     updatePlayButton();
+                    showControls();
                   });
                   
                   // Rewind 10 seconds
                   rewindBtn.addEventListener('click', function(e) {
                     createRipple(e);
                     video.currentTime = Math.max(0, video.currentTime - 10);
+                    showControls();
                   });
                   
                   // Forward 10 seconds
                   forwardBtn.addEventListener('click', function(e) {
                     createRipple(e);
                     video.currentTime = Math.min(video.duration, video.currentTime + 10);
+                    showControls();
                   });
                   
                   // Update button state on play/pause
@@ -1405,6 +2248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   volumeBtn.addEventListener('click', function(e) {
                     createRipple(e);
                     toggleMute();
+                    showControls();
                   });
                   
                   // Volume slider interaction
@@ -1412,61 +2256,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     const rect = this.getBoundingClientRect();
                     const pos = (e.clientX - rect.left) / rect.width;
                     setVolume(pos);
+                    showControls();
                   });
                   
                   // Fullscreen button
                   fullscreenBtn.addEventListener('click', function(e) {
                     createRipple(e);
                     toggleFullscreen();
+                    showControls();
                   });
                   
                   // Settings button
                   settingsBtn.addEventListener('click', function(e) {
                     createRipple(e);
                     toggleSettingsMenu();
+                    showControls();
                   });
                   
-                  // Setup settings menu options
+                  // Monitor fullscreen changes
+                  document.addEventListener('fullscreenchange', function() {
+                    if (document.fullscreenElement) {
+                      fullscreenIcon.className = 'fas fa-compress';
+                    } else {
+                      fullscreenIcon.className = 'fas fa-expand';
+                    }
+                    showControls();
+                  });
+                  
+                  // Setup settings menu playback speed options
                   document.querySelectorAll('.settings-option[data-speed]').forEach(option => {
                     option.addEventListener('click', function() {
                       const speed = parseFloat(this.getAttribute('data-speed'));
                       setPlaybackSpeed(speed);
                       toggleSettingsMenu();
+                      showControls();
                     });
                   });
+                  
+                  // Setup progress bar
+                  setupProgressBar();
+                  
+                  // Initial show controls
+                  showControls();
                 }
-                
-                // Setup event listeners with ripple effects
-                statsToggle.addEventListener('click', function(e) {
-                  createRipple(e);
-                  toggleStats();
-                });
-                
-                screenshotBtn.addEventListener('click', function(e) {
-                  createRipple(e);
-                  takeScreenshot();
-                });
-                
-                showHotkeys.addEventListener('click', function(e) {
-                  createRipple(e);
-                  hotkeysPanel.classList.add('visible');
-                });
-                
-                closeHotkeys.addEventListener('click', function(e) {
-                  createRipple(e);
-                  hotkeysPanel.classList.remove('visible');
-                });
-                
-                cinemaMode.addEventListener('click', function(e) {
-                  createRipple(e);
-                  toggleCinemaMode();
-                });
                 
                 // Close settings when clicking outside
                 document.addEventListener('click', function(e) {
                   if (settingsMenu.classList.contains('visible')) {
                     if (!settingsMenu.contains(e.target) && e.target !== settingsBtn) {
                       settingsMenu.classList.remove('visible');
+                      
+                      // Start hide timer if video is playing
+                      if (!video.paused) {
+                        clearTimeout(controlsTimeout);
+                        controlsTimeout = setTimeout(() => {
+                          hideControls();
+                        }, 3000);
+                      }
+                    }
+                  }
+                });
+                
+                // Video container click for play/pause toggle
+                playerContainer.addEventListener('click', function(e) {
+                  // Only toggle if clicked directly on the container (not on controls)
+                  if (e.target === playerContainer || e.target === video) {
+                    if (video.paused) {
+                      video.play();
+                    } else {
+                      video.pause();
                     }
                   }
                 });
@@ -1474,6 +2332,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Global keyboard shortcuts
                 document.addEventListener('keydown', (e) => {
                   if (document.activeElement === document.body) {
+                    // Show controls on any key press
+                    showControls();
+                    
                     // Space for play/pause
                     if (e.code === 'Space') {
                       e.preventDefault();
@@ -1517,23 +2378,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     if (e.key === 'f' || e.key === 'F') {
                       toggleFullscreen();
                     }
-                    
-                    // S key - Screenshot
-                    if (e.key === 's' || e.key === 'S') {
-                      takeScreenshot();
-                    }
-                    
-                    // I key - Stats
-                    if (e.key === 'i' || e.key === 'I') {
-                      toggleStats();
-                    }
-                    
-                    // C key - Cinema mode
-                    if (e.key === 'c' || e.key === 'C') {
-                      toggleCinemaMode();
-                    }
                   }
                 });
+                
+                // Initialize all features
+                function initializeFeatures() {
+                  // Initialize Chromecast if supported
+                  if (window.chrome && window.chrome.cast) {
+                    window.__onGCastApiAvailable = function(isAvailable) {
+                      if (isAvailable) {
+                        initializeCastApi();
+                      }
+                    };
+                  } else {
+                    // Hide cast button if not supported
+                    featureCast.style.display = 'none';
+                  }
+                  
+                  // Initialize other features
+                  setupPictureInPicture();
+                  setupLandscapeMode();
+                  setupCinemaMode();
+                  setupScreenshot();
+                  setupStats();
+                  setupHotkeys();
+                }
                 
                 // If HLS.js is supported
                 if (Hls.isSupported()) {
@@ -1551,6 +2420,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   
                   // Setup video event listeners for time updates
                   video.addEventListener('timeupdate', updateTimeDisplay);
+                  
+                  // Setup seeking events for the progress bar
+                  video.addEventListener('seeked', updateProgressBar);
+                  video.addEventListener('progress', updateBufferedProgress);
                   
                   // Handle HLS events
                   hls.on(Hls.Events.MANIFEST_LOADED, function() {
@@ -1573,16 +2446,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     // Setup custom controls
                     setupCustomControls();
                     
+                    // Initialize features
+                    initializeFeatures();
+                    
+                    // Initially show controls
+                    showControls();
+                    
                     // Add quality options to settings menu
                     if (data.levels.length > 1) {
-                      const qualityList = document.querySelector('.settings-menu h4 + .settings-option').parentNode;
+                      const qualityContainer = document.querySelector('.settings-menu h4:last-child');
+                      const qualityList = qualityContainer.parentNode;
                       
                       // Clear existing quality options (except Auto)
                       const autoOption = document.querySelector('.settings-option[data-quality="auto"]');
-                      while (qualityList.firstChild) {
-                        qualityList.removeChild(qualityList.firstChild);
-                      }
-                      qualityList.appendChild(autoOption);
                       
                       // Add quality options
                       data.levels.forEach((level, index) => {
@@ -1612,16 +2488,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                           if (quality === 'auto') {
                             hls.currentLevel = -1;
                             currentQuality.textContent = "Auto";
+                            showToast("Auto quality selected");
                           } else {
                             hls.currentLevel = parseInt(quality);
                             const level = hls.levels[parseInt(quality)];
                             if (level) {
                               currentQuality.textContent = \`\${level.height}p\`;
+                              showToast(\`Quality set to \${level.height}p\`);
                             }
                           }
                           
-                          // Close settings menu
+                          // Close settings menu and reset control timer
                           toggleSettingsMenu();
+                          showControls();
                         });
                         
                         qualityList.appendChild(option);
@@ -1678,8 +2557,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Setup custom controls
                   setupCustomControls();
                   
+                  // Initialize features
+                  initializeFeatures();
+                  
                   // Setup video event listeners for time updates
                   video.addEventListener('timeupdate', updateTimeDisplay);
+                  
+                  // Setup seeking events for the progress bar
+                  video.addEventListener('seeked', updateProgressBar);
+                  video.addEventListener('progress', updateBufferedProgress);
                   
                   video.addEventListener('loadedmetadata', function() {
                     loading.style.opacity = '0';
@@ -1725,7 +2611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).send(`
           <html>
             <head>
-              <title>Error - Premium Secure Player</title>
+              <title>Error - WovIe Player</title>
               <style>
                 body { 
                   font-family: Arial, sans-serif; 

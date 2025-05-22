@@ -124,12 +124,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             <title>WovIe Player</title>
             <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&family=Russo+One&display=swap" rel="stylesheet">
             <!-- Google Cast SDK -->
             <script type="text/javascript" src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
             <style>
               * { margin: 0; padding: 0; box-sizing: border-box; }
-              
-              @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap');
               
               :root {
                 --primary-color: #6d28d9;
@@ -144,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               body { 
                 background-color: var(--dark-color); 
-                font-family: 'Montserrat', sans-serif;
+                font-family: 'Poppins', sans-serif;
                 overflow: hidden;
                 width: 100vw;
                 height: 100vh;
@@ -176,7 +177,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .advanced-controls {
                 position: absolute;
                 top: 0;
-                left: 0;
                 right: 0;
                 display: flex;
                 justify-content: flex-end;
@@ -199,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 opacity: 1;
                 pointer-events: auto;
               }
-              
+
               .feature-buttons {
                 display: flex;
                 gap: 10px;
@@ -421,9 +421,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               @keyframes float {
-                0% { transform: translateY(0px); }
-                50% { transform: translateY(-5px); }
-                100% { transform: translateY(0px); }
+                0% { transform: translateY(0px) rotate(0deg); }
+                25% { transform: translateY(-5px) rotate(2deg); }
+                75% { transform: translateY(3px) rotate(-2deg); }
+                100% { transform: translateY(0px) rotate(0deg); }
               }
               
               @keyframes glow {
@@ -436,10 +437,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .wovie-logo {
                 position: absolute;
                 top: 20px;
-                left: 50%;
-                transform: translateX(-50%);
+                right: 20px;
+                font-family: 'Russo One', sans-serif;
                 font-size: 24px;
-                font-weight: 700;
+                font-weight: 400;
                 padding: 10px 20px;
                 background: linear-gradient(135deg, #8b5cf6, #6d28d9);
                 color: white;
@@ -451,13 +452,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 transition: opacity 0.5s ease, transform 0.5s ease;
                 box-shadow: 0 4px 20px rgba(0,0,0,0.5);
                 text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                letter-spacing: 1px;
-                animation: float 3s ease-in-out infinite, glow 2s ease-in-out infinite;
+                letter-spacing: 2px;
+                animation: float 4s ease-in-out infinite, glow 2s ease-in-out infinite;
+                transform-origin: center right;
               }
               
               .wovie-logo span {
                 color: #f3f4f6;
-                font-weight: 400;
+                font-weight: 300;
+                letter-spacing: 0;
+                font-family: 'Poppins', sans-serif;
               }
               
               .player-container.controls-visible .wovie-logo {
@@ -792,7 +796,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 right: 0;
                 background: rgba(31, 41, 55, 0.95);
                 border-radius: 8px;
-                width: 200px;
+                width: 220px;
                 padding: 10px 0;
                 backdrop-filter: blur(10px);
                 box-shadow: 0 10px 25px rgba(0,0,0,0.3);
@@ -802,6 +806,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 transition: transform 0.2s ease, opacity 0.2s ease;
                 opacity: 0;
                 pointer-events: auto;
+                max-height: 80vh;
+                overflow-y: auto;
               }
               
               .settings-menu.visible {
@@ -837,6 +843,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               .settings-option span {
                 font-size: 13px;
+              }
+              
+              .settings-feature {
+                padding: 8px 15px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+              }
+              
+              .settings-feature:hover {
+                background: rgba(255,255,255,0.1);
+              }
+              
+              .settings-feature i {
+                margin-right: 10px;
+                width: 16px;
+                text-align: center;
+              }
+              
+              .settings-feature span {
+                font-size: 13px;
+                flex-grow: 1;
+              }
+              
+              .settings-feature.active {
+                color: var(--highlight-color);
+              }
+              
+              .submenu-icon {
+                margin-left: 5px;
+                opacity: 0.7;
+                font-size: 12px;
               }
               
               .volume-container {
@@ -1031,13 +1071,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               <!-- WovIe Player Logo -->
               <div class="wovie-logo">
-                WovIe <span>Player</span>
+                WOVIE <span>Player</span>
               </div>
               
-              <div class="audio-visualizer" id="audioVisualizer">
-                <!-- Audio bars will be added dynamically -->
+              <!-- Additional Controls for newer features -->
+              <div class="additional-controls">
+                <button class="feature-button" id="castButton" title="Cast to TV">
+                  <i class="fas fa-cast"></i>
+                </button>
+                <button class="feature-button pip-btn" id="pipButton" title="Picture-in-Picture">
+                  <i class="fas fa-clone"></i>
+                </button>
+                <button class="feature-button landscape-btn" id="landscapeButton" title="Landscape Mode">
+                  <i class="fas fa-mobile-alt"></i>
+                </button>
               </div>
-            
+              
+              <!-- Advanced Controls -->
               <div class="advanced-controls">
                 <div class="feature-buttons">
                   <button class="feature-button" id="statsToggle" title="Show Stream Stats">
@@ -1055,17 +1105,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 </div>
               </div>
               
-              <!-- Additional Controls for new features (now moved to right side) -->
-              <div class="additional-controls">
-                <button class="feature-button" id="castButton" title="Cast to TV">
-                  <i class="fas fa-cast"></i>
-                </button>
-                <button class="feature-button pip-btn" id="pipButton" title="Picture-in-Picture">
-                  <i class="fas fa-clone"></i>
-                </button>
-                <button class="feature-button landscape-btn" id="landscapeButton" title="Landscape Mode">
-                  <i class="fas fa-mobile-alt"></i>
-                </button>
+              <div class="audio-visualizer" id="audioVisualizer">
+                <!-- Audio bars will be added dynamically -->
               </div>
               
               <!-- Custom controls that work properly -->
@@ -1096,33 +1137,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 <i class="fas fa-expand" id="fullscreenIcon"></i>
               </div>
               
-              <!-- Settings menu -->
+              <!-- Settings menu with all features included -->
               <div class="settings-container">
                 <button class="settings-btn" id="settingsBtn">
                   <i class="fas fa-cog"></i>
                 </button>
                 <div class="settings-menu" id="settingsMenu">
+                  <!-- Features section -->
+                  <h4>Features</h4>
+                  <div class="settings-feature" id="featureCast">
+                    <i class="fas fa-cast"></i>
+                    <span>Cast to TV</span>
+                  </div>
+                  <div class="settings-feature" id="featurePip">
+                    <i class="fas fa-clone"></i>
+                    <span>Picture-in-Picture</span>
+                  </div>
+                  <div class="settings-feature" id="featureLandscape">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>Landscape Mode</span>
+                  </div>
+                  <div class="settings-feature" id="featureCinema">
+                    <i class="fas fa-film"></i>
+                    <span>Cinema Mode</span>
+                  </div>
+                  <div class="settings-feature" id="featureScreenshot">
+                    <i class="fas fa-camera"></i>
+                    <span>Take Screenshot</span>
+                  </div>
+                  <div class="settings-feature" id="featureStats">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Show Statistics</span>
+                  </div>
+                  <div class="settings-feature" id="featureHotkeys">
+                    <i class="fas fa-keyboard"></i>
+                    <span>Keyboard Shortcuts</span>
+                  </div>
+                  
+                  <!-- Playback speed section -->
+                  <h4>Playback Speed</h4>
+                  <div class="settings-option" data-speed="0.25">
+                    <span>0.25x</span>
+                  </div>
+                  <div class="settings-option" data-speed="0.5">
+                    <span>0.5x</span>
+                  </div>
+                  <div class="settings-option" data-speed="0.75">
+                    <span>0.75x</span>
+                  </div>
+                  <div class="settings-option active" data-speed="1">
+                    <span>1x (Normal)</span>
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <div class="settings-option" data-speed="1.25">
+                    <span>1.25x</span>
+                  </div>
+                  <div class="settings-option" data-speed="1.5">
+                    <span>1.5x</span>
+                  </div>
+                  <div class="settings-option" data-speed="1.75">
+                    <span>1.75x</span>
+                  </div>
+                  <div class="settings-option" data-speed="2">
+                    <span>2x</span>
+                  </div>
+                  
+                  <!-- Quality section -->
                   <h4>Quality</h4>
                   <div class="settings-option active" data-quality="auto">
                     <span>Auto</span>
                     <i class="fas fa-check"></i>
                   </div>
                   <!-- Quality options will be added dynamically -->
-                  
-                  <h4>Playback Speed</h4>
-                  <div class="settings-option" data-speed="0.5">
-                    <span>0.5x</span>
-                  </div>
-                  <div class="settings-option active" data-speed="1">
-                    <span>1x (Normal)</span>
-                    <i class="fas fa-check"></i>
-                  </div>
-                  <div class="settings-option" data-speed="1.5">
-                    <span>1.5x</span>
-                  </div>
-                  <div class="settings-option" data-speed="2">
-                    <span>2x</span>
-                  </div>
                 </div>
               </div>
               
@@ -1244,7 +1330,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const statsPanel = document.getElementById('statsPanel');
                 const statsToggle = document.getElementById('statsToggle');
                 const screenshotBtn = document.getElementById('screenshotBtn');
-                const screenshotNotification = document.getElementById('screenshotNotification');
                 const hotkeysPanel = document.getElementById('hotkeysPanel');
                 const showHotkeys = document.getElementById('showHotkeys');
                 const closeHotkeys = document.getElementById('closeHotkeys');
@@ -1255,11 +1340,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const playerContainer = document.getElementById('playerContainer');
                 const toastNotification = document.getElementById('toastNotification');
                 const toastMessage = document.getElementById('toastMessage');
+                const screenshotNotification = document.getElementById('screenshotNotification');
                 
-                // New feature buttons
+                // Feature buttons (both in UI and settings menu)
                 const castButton = document.getElementById('castButton');
                 const pipButton = document.getElementById('pipButton');
                 const landscapeButton = document.getElementById('landscapeButton');
+                
+                // Feature settings
+                const featureCast = document.getElementById('featureCast');
+                const featurePip = document.getElementById('featurePip');
+                const featureLandscape = document.getElementById('featureLandscape');
+                const featureCinema = document.getElementById('featureCinema');
+                const featureScreenshot = document.getElementById('featureScreenshot');
+                const featureStats = document.getElementById('featureStats');
+                const featureHotkeys = document.getElementById('featureHotkeys');
                 
                 // Custom controls
                 const playBtn = document.getElementById('playBtn');
@@ -1375,7 +1470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }, 3000);
                 });
                 
-                // Feature 1: Chromecast Integration
+                // Implement feature: Chromecast
                 function initializeCastApi() {
                   if (!window.chrome || !window.chrome.cast || !window.chrome.cast.isAvailable) {
                     setTimeout(initializeCastApi, 1000);
@@ -1392,31 +1487,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   
                   chrome.cast.initialize(apiConfig, onInitSuccess, onInitError);
                   
-                  // Add click event to cast button
-                  castButton.addEventListener('click', function(e) {
-                    createRipple(e);
-                    if (castSession) {
-                      // If already casting, stop casting
-                      castSession.stop();
-                      castSession = null;
-                      castButton.classList.remove('connected');
-                      showToast('Disconnected from Chromecast');
-                    } else {
-                      // Start casting
-                      chrome.cast.requestSession(
-                        function(session) {
-                          onRequestSessionSuccess(session);
-                        },
-                        onRequestSessionError
-                      );
+                  // Add click event to cast buttons (both in UI and settings)
+                  [castButton, featureCast].forEach(btn => {
+                    if (btn) {
+                      btn.addEventListener('click', function(e) {
+                        if (e) createRipple(e);
+                        if (castSession) {
+                          // If already casting, stop casting
+                          castSession.stop();
+                          castSession = null;
+                          castButton.classList.remove('active');
+                          featureCast.classList.remove('active');
+                          showToast('Disconnected from Chromecast');
+                        } else {
+                          // Start casting
+                          chrome.cast.requestSession(
+                            function(session) {
+                              onRequestSessionSuccess(session);
+                            },
+                            onRequestSessionError
+                          );
+                        }
+                        showControls();
+                      });
                     }
-                    showControls();
                   });
                 }
                 
                 function sessionListener(session) {
                   castSession = session;
-                  castButton.classList.add('connected');
+                  castButton.classList.add('active');
+                  featureCast.classList.add('active');
                   
                   if (session.media.length) {
                     onMediaDiscovered('onRequestSessionSuccess', session.media[0]);
@@ -1426,8 +1527,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 function receiverListener(availability) {
                   if (availability === chrome.cast.ReceiverAvailability.AVAILABLE) {
                     castButton.style.display = 'flex';
+                    featureCast.style.display = 'flex';
                   } else {
                     castButton.style.display = 'none';
+                    featureCast.style.display = 'none';
                   }
                 }
                 
@@ -1438,11 +1541,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 function onInitError(error) {
                   console.error('Cast API initialization error:', error);
                   castButton.style.display = 'none';
+                  featureCast.style.display = 'none';
                 }
                 
                 function onRequestSessionSuccess(session) {
                   castSession = session;
-                  castButton.classList.add('connected');
+                  castButton.classList.add('active');
+                  featureCast.classList.add('active');
                   
                   const mediaInfo = new chrome.cast.media.MediaInfo(source, 'application/x-mpegURL');
                   const request = new chrome.cast.media.LoadRequest(mediaInfo);
@@ -1461,7 +1566,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         if (!isAlive) {
                           // If media session is dead, reset casting UI
                           castSession = null;
-                          castButton.classList.remove('connected');
+                          castButton.classList.remove('active');
+                          featureCast.classList.remove('active');
                         }
                       });
                     }, 
@@ -1469,7 +1575,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       console.error('Cast media load error:', error);
                       showToast('Failed to connect to Chromecast');
                       castSession = null;
-                      castButton.classList.remove('connected');
+                      castButton.classList.remove('active');
+                      featureCast.classList.remove('active');
                     }
                   );
                 }
@@ -1484,17 +1591,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   currentMedia = media;
                 }
                 
-                // Feature 2: Picture-in-Picture
+                // Implement feature: Picture-in-Picture
                 function setupPictureInPicture() {
                   // Check if Picture-in-Picture is supported
                   if (document.pictureInPictureEnabled || 
                       (video.webkitSupportsPresentationMode && typeof video.webkitSetPresentationMode === 'function')) {
                     pipButton.style.display = 'flex';
+                    featurePip.style.display = 'flex';
                     
-                    pipButton.addEventListener('click', function(e) {
-                      createRipple(e);
-                      togglePictureInPicture();
-                      showControls();
+                    // Set up both UI and settings click handlers
+                    [pipButton, featurePip].forEach(btn => {
+                      if (btn) {
+                        btn.addEventListener('click', function(e) {
+                          if (e) createRipple(e);
+                          togglePictureInPicture();
+                          showControls();
+                        });
+                      }
                     });
                     
                     // Also add keyboard shortcut for PiP (p key)
@@ -1510,14 +1623,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     // Update active state when entering/exiting PiP mode
                     video.addEventListener('enterpictureinpicture', function() {
                       pipButton.classList.add('active');
+                      featurePip.classList.add('active');
                     });
                     
                     video.addEventListener('leavepictureinpicture', function() {
                       pipButton.classList.remove('active');
+                      featurePip.classList.remove('active');
                     });
                   } else {
                     // Hide PiP button if not supported
                     pipButton.style.display = 'none';
+                    featurePip.style.display = 'none';
                   }
                 }
                 
@@ -1529,6 +1645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         .then(() => {
                           showToast('Exited Picture-in-Picture mode');
                           pipButton.classList.remove('active');
+                          featurePip.classList.remove('active');
                         })
                         .catch(error => {
                           console.error('Error exiting Picture-in-Picture mode:', error);
@@ -1544,9 +1661,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       
                       if (video.webkitPresentationMode === 'picture-in-picture') {
                         pipButton.classList.add('active');
+                        featurePip.classList.add('active');
                         showToast('Entered Picture-in-Picture mode');
                       } else {
                         pipButton.classList.remove('active');
+                        featurePip.classList.remove('active');
                         showToast('Exited Picture-in-Picture mode');
                       }
                     } else if (document.pictureInPictureEnabled) {
@@ -1554,6 +1673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       video.requestPictureInPicture()
                         .then(() => {
                           pipButton.classList.add('active');
+                          featurePip.classList.add('active');
                           showToast('Entered Picture-in-Picture mode');
                         })
                         .catch(error => {
@@ -1569,15 +1689,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                 }
                 
-                // Feature 3: Landscape Mode (for mobile)
+                // Implement feature: Landscape Mode
                 function setupLandscapeMode() {
-                  // Always show landscape button
-                  landscapeButton.style.display = 'flex';
-                  
-                  landscapeButton.addEventListener('click', function(e) {
-                    createRipple(e);
-                    toggleLandscapeMode();
-                    showControls();
+                  // Set up click handlers for both UI and settings buttons
+                  [landscapeButton, featureLandscape].forEach(btn => {
+                    if (btn) {
+                      btn.addEventListener('click', function(e) {
+                        if (e) createRipple(e);
+                        toggleLandscapeMode();
+                        showControls();
+                      });
+                    }
                   });
                   
                   // Manual implementation for landscape mode
@@ -1586,6 +1708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       // Exit landscape mode
                       playerContainer.classList.remove('landscape-active');
                       landscapeButton.classList.remove('active');
+                      featureLandscape.classList.remove('active');
                       document.body.style.overflow = '';
                       
                       // Exit fullscreen if we're in it
@@ -1602,6 +1725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       // Enter landscape mode
                       playerContainer.classList.add('landscape-active');
                       landscapeButton.classList.add('active');
+                      featureLandscape.classList.add('active');
                       document.body.style.overflow = 'hidden';
                       
                       // Request fullscreen for better landscape experience
@@ -1642,6 +1766,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                             isLandscapeMode = true;
                             playerContainer.classList.add('landscape-active');
                             landscapeButton.classList.add('active');
+                            featureLandscape.classList.add('active');
                           }
                         }
                       } else {
@@ -1650,6 +1775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                           // Auto disable landscape mode
                           playerContainer.classList.remove('landscape-active');
                           landscapeButton.classList.remove('active');
+                          featureLandscape.classList.remove('active');
                           isLandscapeMode = false;
                         }
                       }
@@ -1668,8 +1794,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       // If exiting fullscreen while in landscape mode, exit landscape mode too
                       playerContainer.classList.remove('landscape-active');
                       landscapeButton.classList.remove('active');
+                      featureLandscape.classList.remove('active');
                       document.body.style.overflow = '';
                       isLandscapeMode = false;
+                    }
+                  });
+                }
+                
+                // Implement feature: Cinema Mode
+                function setupCinemaMode() {
+                  // Set up click handlers for both UI and settings buttons
+                  [cinemaMode, featureCinema].forEach(btn => {
+                    if (btn) {
+                      btn.addEventListener('click', function(e) {
+                        if (e) createRipple(e);
+                        toggleCinemaMode();
+                        showControls();
+                      });
+                    }
+                  });
+                  
+                  // Also add keyboard shortcut for cinema mode (c key)
+                  document.addEventListener('keydown', function(e) {
+                    if (e.key === 'c' || e.key === 'C') {
+                      if (document.activeElement === document.body) {
+                        toggleCinemaMode();
+                        showControls();
+                      }
+                    }
+                  });
+                }
+                
+                // Toggle cinema mode
+                function toggleCinemaMode() {
+                  body.classList.toggle('cinema-mode-active');
+                  cinemaMode.classList.toggle('active');
+                  featureCinema.classList.toggle('active');
+                  
+                  if (body.classList.contains('cinema-mode-active')) {
+                    showToast('Entered Cinema Mode');
+                  } else {
+                    showToast('Exited Cinema Mode');
+                  }
+                  
+                  // Reset inactivity timer
+                  showControls();
+                }
+                
+                // Implement feature: Screenshot
+                function setupScreenshot() {
+                  // Set up click handlers for both UI and settings buttons
+                  [screenshotBtn, featureScreenshot].forEach(btn => {
+                    if (btn) {
+                      btn.addEventListener('click', function(e) {
+                        if (e) createRipple(e);
+                        takeScreenshot();
+                        showControls();
+                      });
+                    }
+                  });
+                  
+                  // Also add keyboard shortcut for screenshot (s key)
+                  document.addEventListener('keydown', function(e) {
+                    if (e.key === 's' || e.key === 'S') {
+                      if (document.activeElement === document.body) {
+                        takeScreenshot();
+                        showControls();
+                      }
+                    }
+                  });
+                }
+                
+                // Take screenshot function
+                function takeScreenshot() {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = video.videoWidth;
+                  canvas.height = video.videoHeight;
+                  
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                  
+                  try {
+                    const link = document.createElement('a');
+                    link.download = \`wovie-screenshot-\${new Date().getTime()}.jpg\`;
+                    link.href = canvas.toDataURL('image/jpeg', 0.8);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Show notification
+                    screenshotNotification.classList.add('visible');
+                    setTimeout(() => {
+                      screenshotNotification.classList.remove('visible');
+                    }, 3000);
+                  } catch (e) {
+                    console.error("Screenshot error:", e);
+                  }
+                  
+                  // Reset inactivity timer
+                  showControls();
+                }
+                
+                // Implement feature: Stats
+                function setupStats() {
+                  // Set up click handlers for both UI and settings buttons
+                  [statsToggle, featureStats].forEach(btn => {
+                    if (btn) {
+                      btn.addEventListener('click', function(e) {
+                        if (e) createRipple(e);
+                        toggleStats();
+                        showControls();
+                      });
+                    }
+                  });
+                  
+                  // Also add keyboard shortcut for stats (i key)
+                  document.addEventListener('keydown', function(e) {
+                    if (e.key === 'i' || e.key === 'I') {
+                      if (document.activeElement === document.body) {
+                        toggleStats();
+                        showControls();
+                      }
                     }
                   });
                 }
@@ -1678,18 +1923,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 function toggleStats() {
                   statsPanel.classList.toggle('visible');
                   statsToggle.classList.toggle('active');
+                  featureStats.classList.toggle('active');
                   
                   if (statsPanel.classList.contains('visible')) {
                     startStatsUpdates();
+                    showToast('Stream Statistics Enabled');
                     showControls(); // Keep controls visible when stats are shown
                   } else {
                     clearInterval(statsInterval);
+                    showToast('Stream Statistics Disabled');
                     
                     // Hide controls if should be hidden
                     if (!video.paused && Date.now() - lastMouseMoveTime > 3000) {
                       hideControls();
                     }
                   }
+                }
+                
+                // Implement feature: Keyboard Shortcuts
+                function setupHotkeys() {
+                  // Set up click handlers for both UI and settings buttons
+                  [showHotkeys, featureHotkeys].forEach(btn => {
+                    if (btn) {
+                      btn.addEventListener('click', function(e) {
+                        if (e) createRipple(e);
+                        hotkeysPanel.classList.add('visible');
+                        showControls();
+                        clearTimeout(controlsTimeout); // Prevent auto-hide
+                      });
+                    }
+                  });
+                  
+                  closeHotkeys.addEventListener('click', function(e) {
+                    if (e) createRipple(e);
+                    hotkeysPanel.classList.remove('visible');
+                    showControls();
+                    
+                    // Start hide timer if video is playing
+                    if (!video.paused) {
+                      clearTimeout(controlsTimeout);
+                      controlsTimeout = setTimeout(() => {
+                        hideControls();
+                      }, 3000);
+                    }
+                  });
                 }
                 
                 // Start periodic stats updates
@@ -1877,45 +2154,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   });
                 }
                 
-                // Take screenshot function
-                function takeScreenshot() {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = video.videoWidth;
-                  canvas.height = video.videoHeight;
-                  
-                  const ctx = canvas.getContext('2d');
-                  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                  
-                  try {
-                    const link = document.createElement('a');
-                    link.download = \`wovie-screenshot-\${new Date().getTime()}.jpg\`;
-                    link.href = canvas.toDataURL('image/jpeg', 0.8);
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    // Show notification
-                    screenshotNotification.classList.add('visible');
-                    setTimeout(() => {
-                      screenshotNotification.classList.remove('visible');
-                    }, 3000);
-                  } catch (e) {
-                    console.error("Screenshot error:", e);
-                  }
-                  
-                  // Reset inactivity timer
-                  showControls();
-                }
-                
-                // Toggle cinema mode
-                function toggleCinemaMode() {
-                  body.classList.toggle('cinema-mode-active');
-                  cinemaMode.classList.toggle('active');
-                  
-                  // Reset inactivity timer
-                  showControls();
-                }
-                
                 // Toggle settings menu
                 function toggleSettingsMenu() {
                   const wasVisible = settingsMenu.classList.contains('visible');
@@ -2026,6 +2264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Change playback speed
                 function setPlaybackSpeed(speed) {
                   video.playbackRate = speed;
+                  showToast(\`Playback speed set to \${speed}x\`);
                   
                   // Update UI
                   document.querySelectorAll('.settings-option[data-speed]').forEach(option => {
@@ -2201,7 +2440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     showControls();
                   });
                   
-                  // Setup settings menu options
+                  // Setup settings menu playback speed options
                   document.querySelectorAll('.settings-option[data-speed]').forEach(option => {
                     option.addEventListener('click', function() {
                       const speed = parseFloat(this.getAttribute('data-speed'));
@@ -2217,46 +2456,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Initial show controls
                   showControls();
                 }
-                
-                // Setup event listeners with ripple effects
-                statsToggle.addEventListener('click', function(e) {
-                  createRipple(e);
-                  toggleStats();
-                  showControls();
-                });
-                
-                screenshotBtn.addEventListener('click', function(e) {
-                  createRipple(e);
-                  takeScreenshot();
-                  showControls();
-                });
-                
-                showHotkeys.addEventListener('click', function(e) {
-                  createRipple(e);
-                  hotkeysPanel.classList.add('visible');
-                  showControls();
-                  clearTimeout(controlsTimeout); // Prevent auto-hide
-                });
-                
-                closeHotkeys.addEventListener('click', function(e) {
-                  createRipple(e);
-                  hotkeysPanel.classList.remove('visible');
-                  showControls();
-                  
-                  // Start hide timer if video is playing
-                  if (!video.paused) {
-                    clearTimeout(controlsTimeout);
-                    controlsTimeout = setTimeout(() => {
-                      hideControls();
-                    }, 3000);
-                  }
-                });
-                
-                cinemaMode.addEventListener('click', function(e) {
-                  createRipple(e);
-                  toggleCinemaMode();
-                  showControls();
-                });
                 
                 // Close settings when clicking outside
                 document.addEventListener('click', function(e) {
@@ -2336,27 +2535,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     if (e.key === 'f' || e.key === 'F') {
                       toggleFullscreen();
                     }
-                    
-                    // S key - Screenshot
-                    if (e.key === 's' || e.key === 'S') {
-                      takeScreenshot();
-                    }
-                    
-                    // I key - Stats
-                    if (e.key === 'i' || e.key === 'I') {
-                      toggleStats();
-                    }
-                    
-                    // C key - Cinema mode
-                    if (e.key === 'c' || e.key === 'C') {
-                      toggleCinemaMode();
-                    }
                   }
                 });
                 
-                // Initialize new features
-                function initializeNewFeatures() {
-                  // Initialize Chromecast
+                // Initialize all features
+                function initializeFeatures() {
+                  // Initialize Chromecast if supported
                   if (window.chrome && window.chrome.cast) {
                     window.__onGCastApiAvailable = function(isAvailable) {
                       if (isAvailable) {
@@ -2366,13 +2550,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   } else {
                     // Hide cast button if not supported
                     castButton.style.display = 'none';
+                    featureCast.style.display = 'none';
                   }
                   
-                  // Initialize Picture-in-Picture
+                  // Initialize other features
                   setupPictureInPicture();
-                  
-                  // Initialize Landscape Mode
                   setupLandscapeMode();
+                  setupCinemaMode();
+                  setupScreenshot();
+                  setupStats();
+                  setupHotkeys();
                 }
                 
                 // If HLS.js is supported
@@ -2417,22 +2604,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     // Setup custom controls
                     setupCustomControls();
                     
-                    // Initialize new features
-                    initializeNewFeatures();
+                    // Initialize features
+                    initializeFeatures();
                     
                     // Initially show controls
                     showControls();
                     
                     // Add quality options to settings menu
                     if (data.levels.length > 1) {
-                      const qualityList = document.querySelector('.settings-menu h4 + .settings-option').parentNode;
+                      const qualityContainer = document.querySelector('.settings-menu h4:last-child');
+                      const qualityList = qualityContainer.parentNode;
                       
                       // Clear existing quality options (except Auto)
                       const autoOption = document.querySelector('.settings-option[data-quality="auto"]');
-                      while (qualityList.firstChild) {
-                        qualityList.removeChild(qualityList.firstChild);
-                      }
-                      qualityList.appendChild(autoOption);
                       
                       // Add quality options
                       data.levels.forEach((level, index) => {
@@ -2462,11 +2646,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                           if (quality === 'auto') {
                             hls.currentLevel = -1;
                             currentQuality.textContent = "Auto";
+                            showToast("Auto quality selected");
                           } else {
                             hls.currentLevel = parseInt(quality);
                             const level = hls.levels[parseInt(quality)];
                             if (level) {
                               currentQuality.textContent = \`\${level.height}p\`;
+                              showToast(\`Quality set to \${level.height}p\`);
                             }
                           }
                           
@@ -2529,8 +2715,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Setup custom controls
                   setupCustomControls();
                   
-                  // Initialize new features
-                  initializeNewFeatures();
+                  // Initialize features
+                  initializeFeatures();
                   
                   // Setup video event listeners for time updates
                   video.addEventListener('timeupdate', updateTimeDisplay);
