@@ -110,7 +110,7 @@ export default function MediaInfoSearch() {
     }
   };
 
-  // Search for media info
+  // Search for media info with IMDB or TMDB ID
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -124,8 +124,55 @@ export default function MediaInfoSearch() {
     setAllLanguages([]);
     setMediaInfo(null);
     
+    // If user selected TMDB ID, convert it to IMDB first
+    let finalId = mediaId.trim();
+    if (idType === "tmdb") {
+      try {
+        setIsTmdbLoading(true);
+        const response = await fetch(`/api/tmdb-to-imdb/${mediaId.trim()}`);
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || "Failed to convert TMDB ID");
+        }
+        
+        setTmdbSearchResult(data);
+        finalId = data.imdbId; // Use the converted IMDB ID
+        
+        toast({
+          title: "TMDB ID Converted",
+          description: `Found "${data.title}" (${data.release_date?.substring(0, 4) || ''}). Using IMDB ID: ${data.imdbId}`,
+        });
+      } catch (err) {
+        console.error("Failed to convert TMDB ID:", err);
+        setTmdbError("Failed to convert TMDB ID. Please check the ID and try again.");
+        setIsLoading(false);
+        setIsTmdbLoading(false);
+        return;
+      } finally {
+        setIsTmdbLoading(false);
+      }
+    } else {
+      // Clear any previous TMDB conversion results
+      setTmdbSearchResult(null);
+    }
+    
     try {
-      const response = await fetch(`https://oplij.koyeb.app/api/v1/mediaInfo?id=${mediaId.trim()}`);
+      // Make a POST request to get media info using the IMDB ID (original or converted)
+      const response = await fetch("https://oplij.koyeb.app/api/v1/info", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          iid: finalId // Use the finalId (converted if it was TMDB)
+        })
+      });
       
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`);
@@ -439,30 +486,42 @@ export default function MediaInfoSearch() {
             </form>
           </div>
           
-          {/* IMDB ID Search */}
+          {/* Combined ID Search with Dropdown */}
           <div>
             <Separator className="my-4" />
             <h3 className="text-lg font-medium mb-2 flex items-center">
               <Search className="h-4 w-4 mr-2" /> 
-              Search by IID
+              Search by ID
             </h3>
             <form id="mediaIdForm" onSubmit={handleSearch} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="mediaId" className="font-medium text-gray-700">IID</Label>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Label htmlFor="idType" className="font-medium text-gray-700 whitespace-nowrap">ID Type</Label>
+                  <Select value={idType} onValueChange={(value) => setIdType(value as "imdb" | "tmdb")}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Select ID Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="imdb">IMDB ID</SelectItem>
+                      <SelectItem value="tmdb">TMDB ID</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 <div className="flex space-x-2">
                   <Input
                     id="mediaId"
                     value={mediaId}
                     onChange={(e) => setMediaId(e.target.value)}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-[2px] focus:blur-0"
-                    placeholder="e.g. tt1877830"
+                    placeholder={idType === "imdb" ? "e.g. tt1877830" : "e.g. 299536"}
                   />
                   <Button 
                     type="submit"
                     className="bg-primary hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition duration-200 flex items-center"
-                    disabled={isLoading}
+                    disabled={isLoading || isTmdbLoading}
                   >
-                    {isLoading ? (
+                    {isLoading || isTmdbLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : (
                       <Search className="h-4 w-4 mr-2" />
@@ -470,53 +529,18 @@ export default function MediaInfoSearch() {
                     Search
                   </Button>
                 </div>
+                
                 {error && (
                   <p className="text-error text-sm">{error}</p>
                 )}
-              </div>
-            </form>
-          </div>
-          
-          {/* TMDB ID Search */}
-          <div>
-            <Separator className="my-4" />
-            <h3 className="text-lg font-medium mb-2 flex items-center">
-              <RefreshCw className="h-4 w-4 mr-2" /> 
-              Search by TID
-            </h3>
-            <form onSubmit={handleTmdbSearch} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="tmdbId" className="font-medium text-gray-700">TID</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="tmdbId"
-                    value={tmdbId}
-                    onChange={(e) => setTmdbId(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary blur-sm hover:blur-[2px] focus:blur-0"
-                    placeholder="e.g. 299536"
-                  />
-                  <Button 
-                    type="submit"
-                    className="bg-primary hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition duration-200 flex items-center"
-                    disabled={isTmdbLoading}
-                  >
-                    {isTmdbLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                    )}
-                    Convert & Search
-                  </Button>
-                </div>
                 {tmdbError && (
                   <p className="text-error text-sm">{tmdbError}</p>
                 )}
                 
-                {tmdbSearchResult && (
+                {tmdbSearchResult && idType === "tmdb" && (
                   <div className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
-                    <p className="text-sm font-medium text-gray-700">Found: <span className="text-primary">{tmdbSearchResult.title}</span> ({tmdbSearchResult.release_date.substring(0, 4)})</p>
-                    <p className="text-xs text-gray-500 mt-1">IMDB ID: <span className="font-mono">{tmdbSearchResult.imdbId}</span></p>
-                    <p className="text-xs text-gray-500 mt-2">The IMDB ID has been automatically transferred to the search field and the search has been triggered.</p>
+                    <p className="text-sm font-medium text-gray-700">Found: <span className="text-primary">{tmdbSearchResult.title}</span> ({tmdbSearchResult.release_date?.substring(0, 4) || ''})</p>
+                    <p className="text-xs text-gray-500 mt-1">Converted to IMDB ID: <span className="font-mono">{tmdbSearchResult.imdbId}</span></p>
                   </div>
                 )}
               </div>
