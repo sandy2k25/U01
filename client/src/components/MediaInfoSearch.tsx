@@ -163,16 +163,8 @@ export default function MediaInfoSearch() {
     }
     
     try {
-      // Make a POST request to get media info using the IMDB ID (original or converted)
-      const response = await fetch("https://oplij.koyeb.app/api/v1/info", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          iid: finalId // Use the finalId (converted if it was TMDB)
-        })
-      });
+      // Using the API format that's working correctly
+      const response = await fetch(`https://oplij.koyeb.app/api/v1/mediaInfo?id=${finalId}`);
       
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`);
