@@ -2343,6 +2343,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   video.playbackRate = speed;
                   showToast(\`Playback speed set to \${speed}x\`);
                   
+                  // Create a data object to store current player settings
+                  const playerSettings = {
+                    playbackSpeed: speed,
+                    quality: currentQualityText ? currentQualityText.textContent : 'Auto'
+                  };
+                  
+                  // Store settings in localStorage for download and persistence
+                  try {
+                    localStorage.setItem('woviePlayerSettings', JSON.stringify(playerSettings));
+                  } catch (e) {
+                    console.warn('Could not save settings to localStorage', e);
+                  }
+                  
                   // Update UI
                   document.querySelectorAll('.settings-option[data-speed]').forEach(option => {
                     option.classList.remove('active');
@@ -2368,6 +2381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   if (!window.hls) return;
                   
                   const hls = window.hls;
+                  let qualityText = 'Auto';
                   
                   if (level === 'auto') {
                     hls.currentLevel = -1;
@@ -2379,9 +2393,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     
                     if (hls.levels[levelIndex]) {
                       const height = hls.levels[levelIndex].height;
-                      currentQualityText.textContent = \`\${height}p\`;
+                      qualityText = \`\${height}p\`;
+                      currentQualityText.textContent = qualityText;
                       showToast(\`Quality set to \${height}p\`);
                     }
+                  }
+                  
+                  // Read current playback speed to synchronize settings
+                  let currentSpeed = video.playbackRate;
+                  
+                  // Create a data object to store current player settings
+                  const playerSettings = {
+                    playbackSpeed: currentSpeed,
+                    quality: qualityText
+                  };
+                  
+                  // Store settings in localStorage for download and persistence
+                  try {
+                    localStorage.setItem('woviePlayerSettings', JSON.stringify(playerSettings));
+                  } catch (e) {
+                    console.warn('Could not save settings to localStorage', e);
                   }
                   
                   // Update both UIs
@@ -2679,6 +2710,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }
                   }
                 });
+                
+                // Load player settings from localStorage for consistent download experience
+                function loadSavedPlayerSettings() {
+                  try {
+                    const savedSettings = localStorage.getItem('woviePlayerSettings');
+                    if (savedSettings) {
+                      const settings = JSON.parse(savedSettings);
+                      
+                      // Apply saved playback speed if available
+                      if (settings.playbackSpeed) {
+                        setPlaybackSpeed(parseFloat(settings.playbackSpeed));
+                      }
+                      
+                      // Note: Quality will be handled by HLS.js automatically based on bandwidth,
+                      // but we'll store the user's preferred selection for download settings
+                    }
+                  } catch (e) {
+                    console.warn('Could not load saved player settings', e);
+                  }
+                }
                 
                 // Initialize all features
                 function initializeFeatures() {
