@@ -15,6 +15,10 @@
   ],
   "routes": [
     {
+      "src": "/secure-player(.*)",
+      "dest": "server/index.ts"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "server/index.ts"
     },
@@ -24,6 +28,10 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "ADMIN_API_KEY": "@admin_api_key",
+    "ADMIN_BOT_TOKEN": "@admin_bot_token",
+    "USER_BOT_TOKEN": "@user_bot_token",
+    "DEFAULT_EXTRACTION_URL": "https://oplij.koyeb.app/api/v1/getStream"
   }
 }

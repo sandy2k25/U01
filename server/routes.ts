@@ -29,9 +29,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Secure Player endpoint for encrypted streams
   app.get("/secure-player", async (req: Request, res: Response) => {
     try {
+      console.log("Secure player request received with query:", req.query);
       const { token } = req.query;
       
       if (!token) {
+        console.log("Missing token in secure player request");
         return res.status(400).send(`
           <html>
             <head>
@@ -66,7 +68,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Decode the token (which is base64 encoded)
+        console.log("Attempting to decode token:", typeof token);
         const streamUrl = Buffer.from(token as string, 'base64').toString('utf-8');
+        console.log("Successfully decoded stream URL:", streamUrl ? "URL found" : "Empty URL");
         
         // Send an HTML5 video player with enhanced features that uses the decoded URL
         res.send(`
@@ -278,6 +282,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `);
       } catch (error) {
         console.error("Error decoding secure player token:", error);
+        // Try to get more details about the error
+        const errorDetails = error instanceof Error ? error.message : 'Unknown error';
+        console.error("Error details:", errorDetails);
+        
         return res.status(400).send(`
           <html>
             <head>
@@ -304,6 +312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <div class="error-container">
                 <h2>Error: Invalid Stream Token</h2>
                 <p>The secure stream URL is invalid or has expired.</p>
+                <p style="font-size: 12px; margin-top: 15px; color: #666;">Error: ${errorDetails}</p>
               </div>
             </body>
           </html>
