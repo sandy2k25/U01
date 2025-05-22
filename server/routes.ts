@@ -1129,6 +1129,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                 }
                 
+                // Function to fix player controls and ensure they work properly
+                function fixPlayerControls() {
+                  if (!player || !player.elements) return;
+                  
+                  // Manual implementation of play/pause toggle
+                  const playButton = player.elements.container.querySelector('.plyr__control--overlaid');
+                  if (playButton) {
+                    playButton.addEventListener('click', function(e) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      
+                      if (player.paused) {
+                        player.play();
+                      } else {
+                        player.pause();
+                      }
+                    });
+                  }
+                  
+                  // Make sure keyboard shortcuts work correctly
+                  document.addEventListener('keydown', function(e) {
+                    // Space for play/pause
+                    if (e.code === 'Space' && document.activeElement === document.body) {
+                      e.preventDefault();
+                      if (player.paused) {
+                        player.play();
+                      } else {
+                        player.pause();
+                      }
+                    }
+                    
+                    // Forward 10 seconds with right arrow
+                    if (e.code === 'ArrowRight' && document.activeElement === document.body) {
+                      e.preventDefault();
+                      player.forward(10);
+                    }
+                    
+                    // Backward 10 seconds with left arrow
+                    if (e.code === 'ArrowLeft' && document.activeElement === document.body) {
+                      e.preventDefault();
+                      player.rewind(10);
+                    }
+                  });
+                  
+                  // Fix play/pause button in controls
+                  const smallPlayButton = player.elements.container.querySelector('.plyr__controls button[data-plyr="play"]');
+                  if (smallPlayButton) {
+                    smallPlayButton.addEventListener('click', function(e) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      
+                      if (player.paused) {
+                        player.play();
+                      } else {
+                        player.pause();
+                      }
+                    });
+                  }
+                  
+                  // Ensure forward/backward buttons work
+                  const forwardButton = player.elements.container.querySelector('button[data-plyr="fast-forward"]');
+                  if (forwardButton) {
+                    forwardButton.addEventListener('click', function(e) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      player.forward(10);
+                    });
+                  }
+                  
+                  const rewindButton = player.elements.container.querySelector('button[data-plyr="rewind"]');
+                  if (rewindButton) {
+                    rewindButton.addEventListener('click', function(e) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      player.rewind(10);
+                    });
+                  }
+                  
+                  // Add custom forward/backward buttons if needed
+                  const controls = player.elements.container.querySelector('.plyr__controls');
+                  if (controls && !forwardButton && !rewindButton) {
+                    // Create custom control buttons
+                    const customControls = document.createElement('div');
+                    customControls.className = 'custom-controls';
+                    customControls.style.display = 'flex';
+                    customControls.style.gap = '10px';
+                    
+                    // Backward button
+                    const backwardBtn = document.createElement('button');
+                    backwardBtn.innerHTML = '<i class="fas fa-backward"></i>';
+                    backwardBtn.className = 'plyr__control';
+                    backwardBtn.setAttribute('data-plyr', 'rewind');
+                    backwardBtn.setAttribute('aria-label', 'Rewind 10s');
+                    backwardBtn.addEventListener('click', function() {
+                      player.rewind(10);
+                    });
+                    
+                    // Forward button
+                    const forwardBtn = document.createElement('button');
+                    forwardBtn.innerHTML = '<i class="fas fa-forward"></i>';
+                    forwardBtn.className = 'plyr__control';
+                    forwardBtn.setAttribute('data-plyr', 'fast-forward');
+                    forwardBtn.setAttribute('aria-label', 'Forward 10s');
+                    forwardBtn.addEventListener('click', function() {
+                      player.forward(10);
+                    });
+                    
+                    customControls.appendChild(backwardBtn);
+                    customControls.appendChild(forwardBtn);
+                    
+                    // Insert after play button
+                    const playBtn = controls.querySelector('button[data-plyr="play"]');
+                    if (playBtn && playBtn.nextSibling) {
+                      controls.insertBefore(customControls, playBtn.nextSibling);
+                    } else {
+                      controls.appendChild(customControls);
+                    }
+                  }
+                }
+                
                 // Global keyboard shortcuts
                 document.addEventListener('keydown', (e) => {
                   if (document.activeElement === document.body) {
@@ -1202,6 +1322,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       
                       // Animate player title entrance
                       animatePlayerTitle();
+                      
+                      // Fix player controls
+                      fixPlayerControls();
                     }, 1000);
                     
                     // Quality switching for HLS
