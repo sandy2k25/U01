@@ -2,49 +2,25 @@
   "version": 2,
   "builds": [
     {
-      "src": "vercel-build.js",
-      "use": "@vercel/node",
-      "config": {
-        "buildCommand": "node vercel-build.js"
-      }
-    },
-    {
-      "src": "api/index.ts",
+      "src": "server/index.ts",
       "use": "@vercel/node"
-    },
-    {
-      "src": "dist/public/**",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/secure-player",
-      "dest": "/api"
-    },
-    {
-      "src": "/secure-player/(.*)",
-      "dest": "/api"
+      "src": "/secure-player(.*)",
+      "dest": "/server/index.ts"
     },
     {
       "src": "/api/(.*)",
-      "dest": "/api"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "/dist/public/assets/$1"
-    },
-    {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|svg|ico|json))",
-      "dest": "/dist/public/$1"
+      "dest": "/server/index.ts"
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/public/index.html"
+      "dest": "/server/index.ts"
     }
   ],
   "env": {
-    "NODE_ENV": "production",
-    "DEFAULT_EXTRACTION_URL": "https://oplij.koyeb.app/api/v1/getStream"
+    "NODE_ENV": "production"
   }
 }
