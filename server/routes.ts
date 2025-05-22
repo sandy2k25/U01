@@ -1335,43 +1335,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 <i class="fas fa-expand" id="fullscreenIcon"></i>
               </div>
               
-              <!-- Settings menu with all features included -->
+              <!-- Consolidated Settings menu with all features included -->
               <div class="settings-container">
                 <button class="settings-btn" id="settingsBtn">
                   <i class="fas fa-cog"></i>
                 </button>
                 <div class="settings-menu" id="settingsMenu">
-                  <!-- Features section -->
-                  <h4>Features</h4>
-                  <div class="settings-feature" id="featureCast">
-                    <i class="fas fa-cast"></i>
-                    <span>Cast to TV</span>
-                  </div>
+                  <!-- Main controls section -->
+                  <h4>Main Controls</h4>
                   <div class="settings-feature" id="featurePip">
                     <i class="fas fa-clone"></i>
                     <span>Picture-in-Picture</span>
                     <span class="feature-badge">P</span>
                   </div>
+                  <div class="settings-feature" id="featureCast">
+                    <i class="fas fa-cast"></i>
+                    <span>Cast to TV</span>
+                  </div>
                   <div class="settings-feature" id="featureLandscape">
                     <i class="fas fa-mobile-alt"></i>
-                    <span>Landscape Mode</span>
+                    <span>Rotate Screen</span>
                   </div>
-                  <div class="settings-feature" id="featureCinema">
-                    <i class="fas fa-film"></i>
-                    <span>Cinema Mode</span>
+                  
+                  <!-- Quality section -->
+                  <h4>Video Quality</h4>
+                  <div class="settings-option active" data-quality="auto">
+                    <span>Auto</span>
+                    <i class="fas fa-check"></i>
                   </div>
-                  <div class="settings-feature" id="featureScreenshot">
-                    <i class="fas fa-camera"></i>
-                    <span>Take Screenshot</span>
-                  </div>
-                  <div class="settings-feature" id="featureStats">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Show Statistics</span>
-                  </div>
-                  <div class="settings-feature" id="featureHotkeys">
-                    <i class="fas fa-keyboard"></i>
-                    <span>Keyboard Shortcuts</span>
-                  </div>
+                  <!-- Quality options will be added dynamically -->
                   
                   <!-- Playback speed section -->
                   <h4>Playback Speed</h4>
@@ -1401,13 +1393,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     <span>2x</span>
                   </div>
                   
-                  <!-- Quality section -->
-                  <h4>Quality</h4>
-                  <div class="settings-option active" data-quality="auto">
-                    <span>Auto</span>
-                    <i class="fas fa-check"></i>
+                  <!-- Advanced features section -->
+                  <h4>Advanced Features</h4>
+                  <div class="settings-feature" id="featureCinema">
+                    <i class="fas fa-film"></i>
+                    <span>Cinema Mode</span>
                   </div>
-                  <!-- Quality options will be added dynamically -->
+                  <div class="settings-feature" id="featureScreenshot">
+                    <i class="fas fa-camera"></i>
+                    <span>Take Screenshot</span>
+                  </div>
+                  <div class="settings-feature" id="featureStats">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Show Statistics</span>
+                  </div>
+                  <div class="settings-feature" id="featureHotkeys">
+                    <i class="fas fa-keyboard"></i>
+                    <span>Keyboard Shortcuts</span>
+                  </div>
                 </div>
               </div>
               
