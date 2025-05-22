@@ -111,6 +111,34 @@
   -webkit-text-fill-color: transparent;
 }
 
+/* Glowing text effects */
+.glow-text-green {
+  text-shadow: 0 0 10px rgba(74, 222, 128, 0.5), 
+               0 0 20px rgba(74, 222, 128, 0.3),
+               0 0 30px rgba(74, 222, 128, 0.1);
+  animation: pulse-glow 2s infinite;
+}
+
+.glow-text-red {
+  text-shadow: 0 0 10px rgba(248, 113, 113, 0.5), 
+               0 0 20px rgba(248, 113, 113, 0.3),
+               0 0 30px rgba(248, 113, 113, 0.1);
+  animation: pulse-glow 2s infinite;
+}
+
+.glow-text-blue {
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.5), 
+               0 0 20px rgba(96, 165, 250, 0.3),
+               0 0 30px rgba(96, 165, 250, 0.1);
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
 /* Custom animations for player controls */
 @keyframes fadeIn {
   from { opacity: 0; }

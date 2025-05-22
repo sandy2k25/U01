@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Play, Clipboard, Check, Settings, Maximize, Pause, VolumeX, Volume2, SkipForward, SkipBack, RotateCw, MonitorPlay, ExternalLink, PlayCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -427,6 +428,36 @@ export default function DirectM3U8Extractor() {
     }
   };
   
+  // Admin authentication function
+  const authenticateAdmin = async () => {
+    if (!adminPassword) {
+      toast({
+        title: "Password required",
+        description: "Please enter the admin password",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // For demo purposes, you can set a simple password here
+    // In a real application, this would be handled securely on the server
+    const demoAdminPassword = "admin123";
+    
+    if (adminPassword === demoAdminPassword) {
+      setIsAdminAuthenticated(true);
+      toast({
+        title: "Authentication Successful",
+        description: "You now have admin access to view the stream URL",
+      });
+    } else {
+      toast({
+        title: "Authentication Failed",
+        description: "Incorrect admin password",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Generate encrypted URL for sharing
   const generateEncryptedUrl = () => {
     if (!m3u8Url) {
@@ -647,7 +678,7 @@ export default function DirectM3U8Extractor() {
           </div>
         ) : m3u8Url ? (
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full grid grid-cols-2 mb-4">
+            <TabsList className="w-full grid grid-cols-3 mb-4">
               <TabsTrigger value="player" className="flex items-center">
                 <MonitorPlay className="h-4 w-4 mr-2" />
                 Advanced Player
@@ -655,6 +686,10 @@ export default function DirectM3U8Extractor() {
               <TabsTrigger value="encrypted" className="flex items-center">
                 <Clipboard className="h-4 w-4 mr-2" />
                 Encrypted Stream
+              </TabsTrigger>
+              <TabsTrigger value="admin" className="flex items-center">
+                <Settings className="h-4 w-4 mr-2" />
+                Admin View
               </TabsTrigger>
             </TabsList>
             
@@ -907,6 +942,74 @@ export default function DirectM3U8Extractor() {
                             className="text-xs text-gray-400 hover:text-gray-200 border-gray-700 hover:border-gray-500 w-full"
                           >
                             Generate New URL
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            {/* Admin Tab */}
+            <TabsContent value="admin" className="mt-0">
+              <div className="aspect-video bg-gradient-to-br from-red-900 to-black relative">
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+                  <h3 className="text-white text-xl font-semibold mb-6">Admin Access</h3>
+                  
+                  <div className="w-full max-w-xl">
+                    {!isAdminAuthenticated ? (
+                      <div className="bg-gray-900/70 p-5 rounded-lg shadow-xl border border-red-800">
+                        <p className="text-gray-300 text-sm mb-4 text-center">
+                          Enter admin password to view the direct M3U8 streaming URL
+                        </p>
+                        
+                        <div className="space-y-4">
+                          <Input
+                            type="password"
+                            value={adminPassword}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAdminPassword(e.target.value)}
+                            placeholder="Enter admin password"
+                            className="w-full bg-gray-800 border-gray-700 text-white"
+                          />
+                          
+                          <Button
+                            onClick={authenticateAdmin}
+                            className="w-full bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-medium py-2.5 px-4 rounded-md transition duration-200 shadow-lg shadow-red-700/30"
+                          >
+                            Authenticate
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4 bg-gray-900/70 p-5 rounded-lg shadow-xl border border-green-800">
+                        <div>
+                          <h4 className="text-green-400 font-medium mb-3 flex items-center">
+                            <Check className="h-5 w-5 mr-2" /> Admin Authenticated - Direct M3U8 URL
+                          </h4>
+                          
+                          <div className="relative">
+                            <div className="absolute -top-2 -left-2 w-[calc(100%+16px)] h-[calc(100%+16px)] bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 opacity-50 blur-lg rounded-lg"></div>
+                            <div className="bg-black p-4 rounded-md overflow-auto text-base font-mono text-green-400 max-h-[150px] border border-green-700/50 relative z-10 glow-text-green">
+                              {m3u8Url}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-3">
+                          <Button
+                            onClick={() => copyToClipboard(m3u8Url)}
+                            className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-medium py-2 px-4 rounded-md transition duration-200 flex-1 flex items-center justify-center gap-2 shadow-md"
+                          >
+                            {isCopied ? <Check className="h-4 w-4" /> : <Clipboard className="h-4 w-4" />}
+                            <span>{isCopied ? "Copied!" : "Copy Direct URL"}</span>
+                          </Button>
+                          
+                          <Button 
+                            onClick={() => setIsAdminAuthenticated(false)}
+                            className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-md transition duration-200"
+                          >
+                            Logout
                           </Button>
                         </div>
                       </div>
