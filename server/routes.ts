@@ -1263,17 +1263,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 </div>
               </div>
               
-              <!-- Additional Controls for newer features -->
+              <!-- Additional Controls for newer features - Now empty as all controls moved to settings -->
               <div class="additional-controls">
-                <button class="feature-button pip-btn" id="pipButton" title="Picture-in-Picture">
-                  <i class="fas fa-clone"></i>
-                </button>
-                <button class="feature-button" id="castButton" title="Cast to TV">
-                  <i class="fas fa-cast"></i>
-                </button>
-                <button class="feature-button landscape-btn" id="landscapeButton" title="Landscape Mode">
-                  <i class="fas fa-mobile-alt"></i>
-                </button>
+                <!-- All controls moved to settings panel for better organization -->
               </div>
               
               <!-- Advanced Controls with improved layout -->
