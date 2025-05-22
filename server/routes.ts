@@ -435,68 +435,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 100% { filter: drop-shadow(0 0 5px rgba(139, 92, 246, 0.5)); }
               }
               
-              /* WovIe Player Logo */
-              .wovie-logo {
-                position: absolute;
-                top: 20px;
-                right: 20px;
-                font-family: 'Russo One', sans-serif;
-                font-size: 24px;
-                font-weight: 400;
-                padding: 12px 24px;
-                background: var(--logo-background);
-                color: white;
-                border-radius: 12px;
-                z-index: 15;
-                pointer-events: none;
-                user-select: none;
-                opacity: 0;
-                transition: opacity 0.5s ease, transform 0.5s ease;
-                box-shadow: var(--logo-shadow);
-                text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                letter-spacing: 2px;
-                animation: float 4s ease-in-out infinite, glow 3s ease-in-out infinite;
-                transform-origin: center right;
-                border-right: 4px solid white;
-                overflow: hidden;
-                position: relative;
-              }
-              
-              .wovie-logo::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: -50%;
-                width: 50%;
-                height: 100%;
-                background: linear-gradient(90deg, 
-                    rgba(255,255,255,0) 0%, 
-                    rgba(255,255,255,0.3) 50%, 
-                    rgba(255,255,255,0) 100%);
-                transform: skewX(-20deg);
-                animation: shine 3s infinite;
-              }
-              
-              @keyframes shine {
-                0% { left: -50%; }
-                100% { left: 150%; }
-              }
-              
-              .wovie-logo span {
-                color: #f3f4f6;
-                font-weight: 300;
-                letter-spacing: 0;
-                font-family: 'Poppins', sans-serif;
-                margin-left: 4px;
-                opacity: 0.9;
-                font-size: 22px;
-                text-shadow: none;
-              }
-              
-              .player-container.controls-visible .wovie-logo {
-                opacity: 1;
-              }
-              
               .player-info {
                 position: absolute;
                 bottom: 20px;
@@ -1076,6 +1014,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 transform: translateX(-50%) translateY(0);
               }
               
+              /* Quality selector */
+              .quality-selector {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                z-index: 15;
+                opacity: 0;
+                transition: opacity 0.5s ease;
+                pointer-events: none;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+              }
+              
+              .player-container.controls-visible .quality-selector {
+                opacity: 1;
+                pointer-events: auto;
+              }
+              
+              .quality-button {
+                background: rgba(0,0,0,0.6);
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+              }
+              
+              .quality-button:hover {
+                background: rgba(109, 40, 217, 0.8);
+              }
+              
+              .quality-dropdown {
+                position: absolute;
+                top: 40px;
+                right: 0;
+                background: rgba(31, 41, 55, 0.95);
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                display: none;
+                opacity: 0;
+                transform: translateY(-10px);
+                transition: all 0.2s ease;
+              }
+              
+              .quality-dropdown.visible {
+                display: block;
+                opacity: 1;
+                transform: translateY(0);
+              }
+              
+              .quality-option {
+                padding: 8px 16px;
+                min-width: 100px;
+                cursor: pointer;
+                transition: background 0.2s ease;
+                white-space: nowrap;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+              }
+              
+              .quality-option:hover {
+                background: rgba(255,255,255,0.1);
+              }
+              
+              .quality-option.active {
+                background: rgba(139, 92, 246, 0.2);
+                color: var(--highlight-color);
+              }
+              
               /* Fullscreen mode in landscape */
               @media screen and (max-width: 768px) {
                 .player-container.landscape-active {
@@ -1098,9 +1113,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             <div class="player-container" id="playerContainer">
               <div class="premium-tag">PREMIUM</div>
               
-              <!-- WovIe Player Logo -->
-              <div class="wovie-logo">
-                WOVIE <span>Player</span>
+              <!-- Quality selector in the player UI -->
+              <div class="quality-selector">
+                <button class="quality-button" id="qualityButton">
+                  <i class="fas fa-cog"></i> <span id="currentQualityText">Auto</span>
+                </button>
+                <div class="quality-dropdown" id="qualityDropdown">
+                  <div class="quality-option active" data-quality="auto">
+                    <span>Auto</span>
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <!-- Quality options will be added dynamically -->
+                </div>
               </div>
               
               <!-- Additional Controls for newer features -->
@@ -1371,6 +1395,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const toastMessage = document.getElementById('toastMessage');
                 const screenshotNotification = document.getElementById('screenshotNotification');
                 
+                // Quality selector in player UI
+                const qualityButton = document.getElementById('qualityButton');
+                const currentQualityText = document.getElementById('currentQualityText');
+                const qualityDropdown = document.getElementById('qualityDropdown');
+                
                 // Feature buttons (both in UI and settings menu)
                 const castButton = document.getElementById('castButton');
                 const pipButton = document.getElementById('pipButton');
@@ -1434,6 +1463,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }, duration);
                 }
                 
+                // Toggle quality dropdown
+                qualityButton.addEventListener('click', function() {
+                  qualityDropdown.classList.toggle('visible');
+                  event.stopPropagation();
+                });
+                
+                // Close quality dropdown when clicking elsewhere
+                document.addEventListener('click', function() {
+                  qualityDropdown.classList.remove('visible');
+                });
+                
                 // Auto-hide controls functionality
                 function showControls() {
                   playerContainer.classList.add('controls-visible');
@@ -1453,7 +1493,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Don't hide if video is paused or settings menu is open
                   if (video.paused || settingsMenu.classList.contains('visible') ||
                       hotkeysPanel.classList.contains('visible') || 
-                      statsPanel.classList.contains('visible')) {
+                      statsPanel.classList.contains('visible') ||
+                      qualityDropdown.classList.contains('visible')) {
                     return;
                   }
                   
@@ -1482,7 +1523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 playerContainer.addEventListener('mouseenter', showControls);
                 
                 // Prevent hiding when over controls
-                document.querySelectorAll('.control-btn, .feature-button, .volume-btn, .settings-btn, .fullscreen-btn').forEach(el => {
+                document.querySelectorAll('.control-btn, .feature-button, .volume-btn, .settings-btn, .fullscreen-btn, .quality-button').forEach(el => {
                   el.addEventListener('mouseenter', () => {
                     clearTimeout(controlsTimeout);
                   });
@@ -1819,14 +1860,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   
                   // Handle fullscreen change events
                   document.addEventListener('fullscreenchange', function() {
-                    if (!document.fullscreenElement && isLandscapeMode) {
-                      // If exiting fullscreen while in landscape mode, exit landscape mode too
-                      playerContainer.classList.remove('landscape-active');
-                      landscapeButton.classList.remove('active');
-                      featureLandscape.classList.remove('active');
-                      document.body.style.overflow = '';
-                      isLandscapeMode = false;
+                    if (document.fullscreenElement) {
+                      fullscreenIcon.className = 'fas fa-compress';
+                    } else {
+                      fullscreenIcon.className = 'fas fa-expand';
+                      if (isLandscapeMode) {
+                        // If exiting fullscreen while in landscape mode, exit landscape mode too
+                        playerContainer.classList.remove('landscape-active');
+                        landscapeButton.classList.remove('active');
+                        featureLandscape.classList.remove('active');
+                        document.body.style.overflow = '';
+                        isLandscapeMode = false;
+                      }
                     }
+                    showControls();
                   });
                 }
                 
@@ -2315,6 +2362,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   showControls();
                 }
                 
+                // Change quality level
+                function setQualityLevel(level) {
+                  if (!window.hls) return;
+                  
+                  const hls = window.hls;
+                  
+                  if (level === 'auto') {
+                    hls.currentLevel = -1;
+                    currentQualityText.textContent = 'Auto';
+                    showToast('Automatic quality selection enabled');
+                  } else {
+                    const levelIndex = parseInt(level);
+                    hls.currentLevel = levelIndex;
+                    
+                    if (hls.levels[levelIndex]) {
+                      const height = hls.levels[levelIndex].height;
+                      currentQualityText.textContent = \`\${height}p\`;
+                      showToast(\`Quality set to \${height}p\`);
+                    }
+                  }
+                  
+                  // Update both UIs
+                  updateQualityUI(level);
+                  
+                  // Close dropdown
+                  qualityDropdown.classList.remove('visible');
+                }
+                
+                // Update quality selection UI
+                function updateQualityUI(level) {
+                  // Update main quality selector
+                  document.querySelectorAll('.quality-option').forEach(option => {
+                    option.classList.remove('active');
+                    const check = option.querySelector('i');
+                    if (check) option.removeChild(check);
+                  });
+                  
+                  const activeOption = document.querySelector(\`.quality-option[data-quality="\${level}"]\`);
+                  if (activeOption) {
+                    activeOption.classList.add('active');
+                    if (!activeOption.querySelector('i')) {
+                      const check = document.createElement('i');
+                      check.className = 'fas fa-check';
+                      activeOption.appendChild(check);
+                    }
+                  }
+                  
+                  // Update settings menu quality
+                  document.querySelectorAll('.settings-option[data-quality]').forEach(option => {
+                    option.classList.remove('active');
+                    const check = option.querySelector('i');
+                    if (check) option.removeChild(check);
+                  });
+                  
+                  const activeSettingOption = document.querySelector(\`.settings-option[data-quality="\${level}"]\`);
+                  if (activeSettingOption) {
+                    activeSettingOption.classList.add('active');
+                    if (!activeSettingOption.querySelector('i')) {
+                      const check = document.createElement('i');
+                      check.className = 'fas fa-check';
+                      activeSettingOption.appendChild(check);
+                    }
+                  }
+                }
+                
                 // Add ripple effect on click
                 function createRipple(event) {
                   const button = event.currentTarget;
@@ -2639,8 +2751,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     // Initially show controls
                     showControls();
                     
-                    // Add quality options to settings menu
+                    // Add quality options to both UIs if multiple qualities are available
                     if (data.levels.length > 1) {
+                      // Add quality options to the main quality dropdown
+                      data.levels.forEach((level, index) => {
+                        const option = document.createElement('div');
+                        option.className = 'quality-option';
+                        option.setAttribute('data-quality', index.toString());
+                        
+                        const label = document.createElement('span');
+                        label.textContent = \`\${level.height}p\`;
+                        option.appendChild(label);
+                        
+                        option.addEventListener('click', function() {
+                          setQualityLevel(this.getAttribute('data-quality'));
+                        });
+                        
+                        qualityDropdown.appendChild(option);
+                      });
+                      
+                      // Add quality options to settings menu
                       const qualityContainer = document.querySelector('.settings-menu h4:last-child');
                       const qualityList = qualityContainer.parentNode;
                       
@@ -2658,40 +2788,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         option.appendChild(label);
                         
                         option.addEventListener('click', function() {
-                          // Remove active from all options
-                          document.querySelectorAll('.settings-option[data-quality]').forEach(opt => {
-                            opt.classList.remove('active');
-                            opt.querySelector('i')?.remove();
-                          });
-                          
-                          // Set this as active
-                          this.classList.add('active');
-                          const checkIcon = document.createElement('i');
-                          checkIcon.className = 'fas fa-check';
-                          this.appendChild(checkIcon);
-                          
-                          // Set quality
-                          const quality = this.getAttribute('data-quality');
-                          if (quality === 'auto') {
-                            hls.currentLevel = -1;
-                            currentQuality.textContent = "Auto";
-                            showToast("Auto quality selected");
-                          } else {
-                            hls.currentLevel = parseInt(quality);
-                            const level = hls.levels[parseInt(quality)];
-                            if (level) {
-                              currentQuality.textContent = \`\${level.height}p\`;
-                              showToast(\`Quality set to \${level.height}p\`);
-                            }
-                          }
-                          
-                          // Close settings menu and reset control timer
+                          setQualityLevel(this.getAttribute('data-quality'));
                           toggleSettingsMenu();
-                          showControls();
                         });
                         
                         qualityList.appendChild(option);
                       });
+                    } else {
+                      // Hide quality selectors if only one quality is available
+                      qualityButton.style.display = 'none';
+                      document.querySelector('.settings-menu h4:last-child').style.display = 'none';
+                      document.querySelector('.settings-option[data-quality="auto"]').style.display = 'none';
                     }
                     
                     // Add visual enhancements after player is initialized
