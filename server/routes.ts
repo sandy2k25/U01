@@ -875,6 +875,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 animation: pulse 2s infinite;
               }
               
+              .feature-badge {
+                background-color: var(--highlight-color);
+                color: white;
+                border-radius: 4px;
+                padding: 2px 6px;
+                font-size: 12px;
+                font-weight: bold;
+                margin-left: auto;
+                box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+              }
+              
               .settings-feature.active i {
                 color: var(--highlight-color);
               }
@@ -1249,6 +1260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   <div class="settings-feature" id="featurePip">
                     <i class="fas fa-clone"></i>
                     <span>Picture-in-Picture</span>
+                    <span class="feature-badge">P</span>
                   </div>
                   <div class="settings-feature" id="featureLandscape">
                     <i class="fas fa-mobile-alt"></i>
@@ -1753,6 +1765,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 function togglePictureInPicture() {
                   try {
+                    // Close settings menu when activating PiP to prevent overlap
+                    const settingsMenu = document.getElementById('settingsMenu');
+                    if (settingsMenu && settingsMenu.classList.contains('visible')) {
+                      settingsMenu.classList.remove('visible');
+                    }
+                    
                     if (document.pictureInPictureElement) {
                       // Exit Picture-in-Picture mode
                       document.exitPictureInPicture()
