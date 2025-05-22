@@ -172,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 left: 0;
                 right: 0;
                 display: flex;
-                justify-content: flex-end;
+                justify-content: space-between;
                 padding: 15px 20px;
                 background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
                 z-index: 10;
@@ -183,6 +183,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .player-container:hover .advanced-controls,
               .player-container:hover .player-info {
                 opacity: 1;
+              }
+              
+              .player-branding {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+              }
+              
+              .player-logo {
+                background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+                width: 36px;
+                height: 36px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                font-size: 20px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
               }
               
               /* Audio visualization effect */
@@ -917,6 +936,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               </div>
             
               <div class="advanced-controls">
+                <div class="player-branding">
+                  <div class="player-logo">W</div>
+                </div>
                 <div class="feature-buttons">
                   <button class="feature-button" id="statsToggle" title="Show Stream Stats">
                     <i class="fas fa-chart-bar"></i>
