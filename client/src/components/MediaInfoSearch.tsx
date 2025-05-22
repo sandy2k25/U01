@@ -94,18 +94,17 @@ export default function MediaInfoSearch() {
       const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
       
       if (fileIdInput && apiKeyInput) {
-        // Update the values immediately
-        fileIdInput.value = selectedLanguage.file;
-        apiKeyInput.value = apiKey;
+        // Create a more specific custom event with the actual data
+        const languageSelectedEvent = new CustomEvent('language-selected', {
+          bubbles: true,
+          detail: {
+            fileId: selectedLanguage.file,
+            apiKey: apiKey
+          }
+        });
         
-        // Trigger change events manually
-        const event = new Event('input', { bubbles: true });
-        fileIdInput.dispatchEvent(event);
-        apiKeyInput.dispatchEvent(event);
-        
-        // Dispatch a custom event to notify the CodeGenerator component
-        const languageSelected = new Event('language-selected', { bubbles: true });
-        document.dispatchEvent(languageSelected);
+        // Dispatch the custom event with the data
+        document.dispatchEvent(languageSelectedEvent);
           
         toast({
           title: "Language selected",
