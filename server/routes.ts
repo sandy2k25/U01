@@ -2783,6 +2783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 // Close settings when clicking outside
                 document.addEventListener('click', function(e) {
+                  // Handle settings menu visibility
                   if (settingsMenu.classList.contains('visible')) {
                     if (!settingsMenu.contains(e.target) && e.target !== settingsBtn) {
                       settingsMenu.classList.remove('visible');
@@ -2796,7 +2797,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       }
                     }
                   }
+                  
+                  // Handle speed dropdown visibility
+                  const speedDropdown = document.getElementById('speedDropdown');
+                  const speedBtn = document.getElementById('speedBtn');
+                  if (speedDropdown && speedDropdown.classList.contains('visible')) {
+                    if (!speedDropdown.contains(e.target) && e.target !== speedBtn) {
+                      speedDropdown.classList.remove('visible');
+                      
+                      // Start hide timer if video is playing
+                      if (!video.paused) {
+                        clearTimeout(controlsTimeout);
+                        controlsTimeout = setTimeout(() => {
+                          hideControls();
+                        }, 3000);
+                      }
+                    }
+                  }
                 });
+                
+                // Initialize playback speed dropdown functionality
+                const speedBtn = document.getElementById('speedBtn');
+                const speedDropdown = document.getElementById('speedDropdown');
+                const currentSpeed = document.getElementById('currentSpeed');
+                
+                if (speedBtn && speedDropdown) {
+                  // Toggle speed dropdown
+                  speedBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    speedDropdown.classList.toggle('visible');
+                    
+                    // Close settings menu if open
+                    if (settingsMenu.classList.contains('visible')) {
+                      settingsMenu.classList.remove('visible');
+                    }
+                    
+                    showControls();
+                  });
+                  
+                  // Handle speed option selection
+                  document.querySelectorAll('.speed-option').forEach(option => {
+                    option.addEventListener('click', function(e) {
+                      e.stopPropagation();
+                      const speed = parseFloat(this.getAttribute('data-speed'));
+                      video.playbackRate = speed;
+                      currentSpeed.textContent = speed + 'x';
+                      
+                      // Update active class
+                      document.querySelectorAll('.speed-option').forEach(opt => {
+                        opt.classList.remove('active');
+                      });
+                      this.classList.add('active');
+                      
+                      // Close the dropdown
+                      speedDropdown.classList.remove('visible');
+                      
+                      showToast('Playback speed: ' + speed + 'x');
+                    });
+                  });
+                }
                 
                 // Video container click for play/pause toggle
                 playerContainer.addEventListener('click', function(e) {
