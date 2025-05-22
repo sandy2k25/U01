@@ -197,8 +197,52 @@ export default function MediaInfoSearch() {
     }
   };
 
-  // Handle movie title search
-  const handleMovieSearch = async (e: React.FormEvent) => {
+  // Auto-search after typing 2 or more letters
+  useEffect(() => {
+    // Don't search if query is less than 2 characters
+    if (movieSearchQuery.trim().length < 2) {
+      setMovieSearchResults([]);
+      return;
+    }
+    
+    // Debounce function to avoid too many requests
+    const debounceTimer = setTimeout(async () => {
+      setMovieSearchError("");
+      setIsMovieSearchLoading(true);
+      
+      try {
+        // Use server-side endpoint to avoid exposing API key in client
+        const response = await fetch(`/api/search-files?query=${encodeURIComponent(movieSearchQuery.trim())}`);
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.results && data.results.length > 0) {
+          setMovieSearchResults(data.results);
+        } else {
+          // Only show error if query is meaningful
+          if (movieSearchQuery.trim().length > 3) {
+            setMovieSearchError("No files found matching your search.");
+          }
+          setMovieSearchResults([]);
+        }
+      } catch (err) {
+        console.error("Failed to search for files:", err);
+        setMovieSearchError("Failed to search for files. Please try again.");
+      } finally {
+        setIsMovieSearchLoading(false);
+      }
+    }, 300); // 300ms delay to avoid excessive API calls
+    
+    // Clean up the timeout if the component unmounts or if the query changes
+    return () => clearTimeout(debounceTimer);
+  }, [movieSearchQuery]);
+  
+  // Handle form submission
+  const handleMovieSearch = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!movieSearchQuery.trim()) {
@@ -206,31 +250,7 @@ export default function MediaInfoSearch() {
       return;
     }
     
-    setMovieSearchError("");
-    setIsMovieSearchLoading(true);
-    setMovieSearchResults([]);
-    
-    try {
-      // Use server-side endpoint to avoid exposing API key in client
-      const response = await fetch(`/api/search-files?query=${encodeURIComponent(movieSearchQuery.trim())}`);
-      
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.results && data.results.length > 0) {
-        setMovieSearchResults(data.results);
-      } else {
-        setMovieSearchError("No files found matching your search.");
-      }
-    } catch (err) {
-      console.error("Failed to search for files:", err);
-      setMovieSearchError("Failed to search for files. Please try again.");
-    } finally {
-      setIsMovieSearchLoading(false);
-    }
+    // The actual search is now handled by the useEffect hook
   };
   
   // Handle selecting a movie from the search results
