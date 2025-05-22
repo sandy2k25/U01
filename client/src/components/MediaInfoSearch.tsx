@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, Loader2, Info, ArrowRight, Check, RefreshCw, Film } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PlaylistItem {
   title: string;
@@ -53,6 +54,9 @@ export default function MediaInfoSearch() {
   const [apiKey, setApiKey] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  // ID type selector
+  const [idType, setIdType] = useState<"imdb" | "tmdb">("imdb");
   
   // TMDB ID search states
   const [tmdbId, setTmdbId] = useState("");
