@@ -6,6 +6,7 @@ import { Play, Clipboard, Check, Settings, Maximize, Pause, VolumeX, Volume2, Sk
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
+import Hls from "hls.js";
 
 export default function DirectM3U8Extractor() {
   const [m3u8Url, setM3U8Url] = useState("");
