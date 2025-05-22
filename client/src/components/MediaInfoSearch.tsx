@@ -431,8 +431,8 @@ export default function MediaInfoSearch() {
       {/* Search Section */}
       <section className="p-6">
         <div className="flex items-center mb-4">
-          <Info className="h-5 w-5 text-primary mr-2" />
-          <h2 className="text-xl font-semibold">Media Information Search</h2>
+          <Info className="h-6 w-6 text-blue-400 mr-2 animate-pulse" />
+          <h2 className="text-2xl font-bold gradient-blue-text">Media Information Search</h2>
         </div>
         
         <div className="space-y-8">
@@ -455,7 +455,7 @@ export default function MediaInfoSearch() {
                   />
                   <Button 
                     type="submit"
-                    className="bg-primary hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition duration-200 flex items-center"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-medium py-2 px-4 rounded-md transition duration-200 flex items-center shadow-md shadow-blue-700/30"
                     disabled={isMovieSearchLoading}
                   >
                     {isMovieSearchLoading ? (

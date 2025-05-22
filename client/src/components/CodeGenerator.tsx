@@ -238,7 +238,7 @@ export default function CodeGenerator() {
           className="w-full"
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Credentials</h2>
+            <h2 className="text-2xl font-bold gradient-purple-text">Credentials</h2>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="p-1 h-auto">
                 {isCredentialsOpen ? (
@@ -291,7 +291,7 @@ export default function CodeGenerator() {
               
               <Button 
                 type="submit"
-                className="w-full bg-primary hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-md transition duration-200"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium py-2.5 px-4 rounded-md transition duration-200 shadow-lg shadow-purple-700/30"
               >
                 Update Code
               </Button>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Play, Clipboard, Check, Settings, Maximize, Pause, VolumeX, Volume2, SkipForward, SkipBack, RotateCw, MonitorPlay, ExternalLink } from "lucide-react";
+import { Play, Clipboard, Check, Settings, Maximize, Pause, VolumeX, Volume2, SkipForward, SkipBack, RotateCw, MonitorPlay, ExternalLink, PlayCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
@@ -615,9 +615,12 @@ export default function DirectM3U8Extractor() {
   }, [isPlaying]);
 
   return (
-    <Card className="bg-white rounded-xl shadow-md overflow-hidden">
+    <Card className="bg-gradient-to-br from-pink-900/40 to-orange-900/40 backdrop-blur-sm rounded-xl border border-pink-500/20 shadow-lg shadow-pink-500/20 overflow-hidden glow-card">
       <div className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Advanced M3U8 Player</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <PlayCircle className="h-6 w-6 text-pink-400 animate-pulse" />
+          <h2 className="text-2xl font-bold gradient-text">Advanced M3U8 Player</h2>
+        </div>
         
         {isLoading ? (
           <div className="flex items-center justify-center py-10">
