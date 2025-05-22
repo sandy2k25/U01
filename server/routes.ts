@@ -777,6 +777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
                 opacity: 0;
                 max-height: 80vh;
+                z-index: 100; /* Ensure settings menu has high z-index */
                 overflow-y: auto;
                 border: 1px solid rgba(255,255,255,0.1);
               }
@@ -855,6 +856,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 color: var(--highlight-color);
                 background: rgba(139, 92, 246, 0.1);
                 border-left: 3px solid var(--highlight-color);
+              }
+              
+              /* Enhanced PIP feature styling */
+              #featurePip {
+                position: relative;
+                background: rgba(139, 92, 246, 0.15);
+              }
+              
+              #featurePip:after {
+                content: '';
+                position: absolute;
+                right: 15px;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background-color: var(--highlight-color);
+                animation: pulse 2s infinite;
               }
               
               .settings-feature.active i {
