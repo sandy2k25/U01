@@ -8,6 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import Hls from "hls.js";
 
+// Extend HTMLVideoElement to include the HLS instance property
+interface HTMLVideoElementWithHls extends HTMLVideoElement {
+  hlsInstance?: Hls;
+}
+
 export default function DirectM3U8Extractor() {
   const [m3u8Url, setM3U8Url] = useState("");
   const [isCopied, setIsCopied] = useState(false);
@@ -31,9 +36,10 @@ export default function DirectM3U8Extractor() {
   const [showAdminAuth, setShowAdminAuth] = useState(false);
   const [encryptedUrl, setEncryptedUrl] = useState("");
   
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElementWithHls>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const { toast } = useToast();
 
   // Define type for extraction URL API response
@@ -93,9 +99,21 @@ export default function DirectM3U8Extractor() {
       return () => {};
     };
     
+    // Also listen for the language-selected event to automatically extract the M3U8 URL
+    const handleLanguageSelected = () => {
+      setTimeout(() => {
+        checkForCredentials();
+      }, 200); // Small delay to ensure fileId and apiKey are updated
+    };
+    
+    document.addEventListener('language-selected', handleLanguageSelected);
+    
     const cleanup = setupChangeListeners();
-    return cleanup;
-  }, [extractionUrl, m3u8Url]); // Re-run effect when the extractionUrl changes
+    return () => {
+      cleanup();
+      document.removeEventListener('language-selected', handleLanguageSelected);
+    };
+  }, [extractionUrl, m3u8Url]);
 
   // Fetch the M3U8 URL using the provided credentials
   const fetchM3U8WithCredentials = async (fileId: string, apiKey: string) => {
@@ -121,8 +139,6 @@ export default function DirectM3U8Extractor() {
       if (data.success && data.data && data.data.link) {
         const directUrl = data.data.link;
         setM3U8Url(directUrl);
-        
-        // Removed automatic clipboard copy here
         
         toast({
           title: "Direct URL ready",
@@ -298,6 +314,20 @@ export default function DirectM3U8Extractor() {
     setSelectedQuality(quality);
     setShowQualityOptions(false);
     
+    if (hlsRef.current && hlsRef.current.levels && hlsRef.current.levels.length > 0) {
+      if (quality === 'auto') {
+        hlsRef.current.currentLevel = -1; // Auto quality
+      } else {
+        // Find the matching quality level
+        const level = hlsRef.current.levels.findIndex(l => 
+          `${l.height}p` === quality
+        );
+        if (level !== -1) {
+          hlsRef.current.currentLevel = level;
+        }
+      }
+    }
+    
     toast({
       title: "Quality Changed",
       description: `Quality set to ${quality}`,
@@ -430,18 +460,106 @@ export default function DirectM3U8Extractor() {
     };
   }, []);
 
-  // Reset video player state when URL changes
+  // Initialize HLS.js player when m3u8Url changes
   useEffect(() => {
-    if (videoRef.current) {
-      setIsPlaying(false);
-      setCurrentTime(0);
-      setDuration(0);
-      videoRef.current.load();
-      
-      // Set default qualities based on different available resolutions
-      setAvailableQualities(['auto', '1080p', '720p', '480p', '360p']);
+    if (!videoRef.current || !m3u8Url) return;
+    
+    // Clean up existing HLS instance if any
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
     }
-  }, [m3u8Url]);
+    
+    // Reset player state
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+    
+    // Initialize HLS if supported
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 90
+      });
+      
+      hls.loadSource(m3u8Url);
+      hls.attachMedia(videoRef.current);
+      
+      // Save the HLS instance for later use
+      hlsRef.current = hls;
+      
+      // Handle HLS events
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log('HLS manifest parsed successfully');
+        
+        // Set available qualities based on HLS levels
+        if (hls.levels && hls.levels.length > 0) {
+          const qualities = hls.levels.map(level => 
+            level.height ? `${level.height}p` : 'Unknown'
+          );
+          
+          setAvailableQualities(['auto', ...qualities]);
+        } else {
+          setAvailableQualities(['auto']);
+        }
+      });
+      
+      // Handle errors
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          console.error('Fatal HLS error:', data);
+          
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              toast({
+                title: "Network Error",
+                description: "Connection failed. Trying to recover...",
+                variant: "destructive",
+              });
+              hls.startLoad(); // Try to recover
+              break;
+              
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              toast({
+                title: "Media Error",
+                description: "Stream playback failed. Trying to recover...",
+                variant: "destructive",
+              });
+              hls.recoverMediaError(); // Try to recover
+              break;
+              
+            default:
+              toast({
+                title: "Fatal Error",
+                description: "Cannot play this stream. The URL may be invalid or expired.",
+                variant: "destructive",
+              });
+              break;
+          }
+        }
+      });
+    } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+      // Native HLS support (Safari)
+      videoRef.current.src = m3u8Url;
+      setAvailableQualities(['auto']);
+    } else {
+      // No HLS support
+      toast({
+        title: "Browser Incompatible",
+        description: "Your browser doesn't support HLS streams. Please try a different browser.",
+        variant: "destructive",
+      });
+    }
+    
+    // Cleanup function
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [m3u8Url, toast]);
   
   // Mouse movement listener for showing controls
   useEffect(() => {
@@ -510,7 +628,6 @@ export default function DirectM3U8Extractor() {
                 <video
                   ref={videoRef}
                   className="w-full aspect-video bg-black"
-                  src={m3u8Url}
                   onTimeUpdate={handleTimeUpdate}
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
@@ -518,6 +635,7 @@ export default function DirectM3U8Extractor() {
                   onVolumeChange={() => setIsMuted(videoRef.current?.muted || false)}
                   onClick={togglePlay}
                   playsInline
+                  controls={false}
                 />
                 
                 {/* Video Controls - only shown when showControls is true or video is paused */}
@@ -549,138 +667,128 @@ export default function DirectM3U8Extractor() {
                         onClick={() => handleSkip(-10)} 
                         className="text-white hover:text-primary focus:outline-none group relative controls-btn"
                       >
-                        <SkipBack className="h-5 w-5" />
-                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap animate-scaleIn">
-                          -10 seconds
-                        </span>
+                        <SkipBack className="h-6 w-6" />
+                        <span className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">-10s</span>
                       </button>
                       
                       <button 
                         onClick={togglePlay} 
-                        className="bg-white rounded-full p-2 hover:bg-primary hover:text-white focus:outline-none transition-colors"
+                        className="text-white hover:text-primary focus:outline-none"
                       >
-                        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                        {isPlaying ? (
+                          <Pause className="h-7 w-7" />
+                        ) : (
+                          <Play className="h-7 w-7" />
+                        )}
                       </button>
                       
                       <button 
                         onClick={() => handleSkip(10)} 
-                        className="text-white hover:text-primary focus:outline-none group relative"
+                        className="text-white hover:text-primary focus:outline-none group relative controls-btn"
                       >
-                        <SkipForward className="h-5 w-5" />
-                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                          +10 seconds
-                        </span>
+                        <SkipForward className="h-6 w-6" />
+                        <span className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">+10s</span>
                       </button>
                       
-                      {/* Playback Speed Control */}
-                      <div className="relative">
+                      {/* Volume Control */}
+                      <div className="hidden sm:flex items-center space-x-1 group relative">
                         <button 
-                          onClick={toggleSpeedOptions}
-                          className="text-white hover:text-primary focus:outline-none ml-2 group relative"
+                          onClick={toggleMute} 
+                          className="text-white hover:text-primary focus:outline-none"
                         >
-                          <div className="flex items-center">
-                            <span className="text-xs font-medium">{playbackSpeed}x</span>
-                          </div>
-                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                            Playback speed
-                          </span>
+                          {isMuted || volume === 0 ? (
+                            <VolumeX className="h-5 w-5" />
+                          ) : (
+                            <Volume2 className="h-5 w-5" />
+                          )}
                         </button>
                         
-                        {/* Speed Options Dropdown */}
-                        {showSpeedOptions && (
-                          <div className="absolute bottom-10 left-0 bg-black/80 rounded-md py-1 z-20 animate-fadeIn">
-                            {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
-                              <button
-                                key={speed}
-                                className={`block w-full text-left px-4 py-1 text-sm ${
-                                  playbackSpeed === speed ? 'text-primary' : 'text-white'
-                                } hover:bg-white/10`}
-                                onClick={() => changePlaybackSpeed(speed)}
-                              >
-                                {speed}x {playbackSpeed === speed && '✓'}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                        <div className="w-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <Slider
+                            value={[volume]}
+                            min={0}
+                            max={100}
+                            step={1}
+                            onValueChange={handleVolumeChange}
+                            className="cursor-pointer"
+                          />
+                        </div>
                       </div>
                     </div>
                     
                     <div className="flex items-center space-x-3">
-                      {/* Quality Selection */}
+                      {/* Playback Speed */}
                       <div className="relative">
                         <button 
-                          onClick={toggleQualityOptions}
-                          className="text-white hover:text-primary focus:outline-none group relative"
+                          onClick={toggleSpeedOptions} 
+                          className="text-white hover:text-primary focus:outline-none rounded-md px-2 py-1 text-xs"
                         >
-                          <div className="flex items-center">
-                            <span className="text-xs font-medium">{selectedQuality}</span>
-                          </div>
-                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                            Video quality
-                          </span>
+                          <RotateCw className="h-5 w-5" />
                         </button>
                         
-                        {/* Quality Options Dropdown */}
-                        {showQualityOptions && (
-                          <div className="absolute bottom-10 right-0 bg-black/80 rounded-md py-1 z-20 animate-fadeIn min-w-[80px]">
-                            {availableQualities.map((quality) => (
+                        {showSpeedOptions && (
+                          <div className="absolute right-0 bottom-10 bg-black/90 rounded-md py-2 px-1 w-40 z-10">
+                            <div className="text-xs text-white font-medium px-2 pb-1 mb-1 border-b border-gray-700">
+                              Playback Speed
+                            </div>
+                            {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map(speed => (
                               <button
-                                key={quality}
-                                className={`block w-full text-left px-4 py-1 text-sm ${
-                                  selectedQuality === quality ? 'text-primary' : 'text-white'
-                                } hover:bg-white/10`}
-                                onClick={() => setQuality(quality)}
+                                key={speed}
+                                onClick={() => changePlaybackSpeed(speed)}
+                                className={`block w-full text-left px-2 py-1 text-sm hover:bg-gray-700 rounded ${
+                                  playbackSpeed === speed ? 'bg-primary/20 text-primary font-medium' : 'text-white'
+                                }`}
                               >
-                                {quality} {selectedQuality === quality && '✓'}
+                                {speed === 1 ? 'Normal' : `${speed}x`}
+                                {playbackSpeed === speed && (
+                                  <Check className="h-3 w-3 inline ml-2" />
+                                )}
                               </button>
                             ))}
                           </div>
                         )}
                       </div>
                       
-                      <div className="flex items-center">
-                        <button 
-                          onClick={toggleMute} 
-                          className="text-white hover:text-primary focus:outline-none mr-2 group relative"
-                        >
-                          {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                            {isMuted ? 'Unmute' : 'Mute'}
-                          </span>
-                        </button>
-                        <Slider
-                          value={[isMuted ? 0 : volume]}
-                          min={0}
-                          max={100}
-                          step={1}
-                          onValueChange={handleVolumeChange}
-                          className="w-20"
-                        />
-                      </div>
+                      {/* Quality Selection - only shown when HLS.js provides multiple qualities */}
+                      {availableQualities.length > 1 && (
+                        <div className="relative hidden sm:block">
+                          <button 
+                            onClick={toggleQualityOptions}
+                            className="text-white hover:text-primary focus:outline-none rounded-md px-2 py-1 text-xs"
+                          >
+                            <Settings className="h-5 w-5" />
+                          </button>
+                          
+                          {showQualityOptions && (
+                            <div className="absolute right-0 bottom-10 bg-black/90 rounded-md py-2 px-1 w-40 z-10">
+                              <div className="text-xs text-white font-medium px-2 pb-1 mb-1 border-b border-gray-700">
+                                Quality
+                              </div>
+                              {availableQualities.map(quality => (
+                                <button
+                                  key={quality}
+                                  onClick={() => setQuality(quality)}
+                                  className={`block w-full text-left px-2 py-1 text-sm hover:bg-gray-700 rounded ${
+                                    selectedQuality === quality ? 'bg-primary/20 text-primary font-medium' : 'text-white'
+                                  }`}
+                                >
+                                  {quality}
+                                  {selectedQuality === quality && (
+                                    <Check className="h-3 w-3 inline ml-2" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       
+                      {/* Fullscreen */}
                       <button 
-                        onClick={() => {
-                          if (videoRef.current) {
-                            videoRef.current.currentTime = 0;
-                            videoRef.current.play();
-                          }
-                        }} 
-                        className="text-white hover:text-primary focus:outline-none group relative"
-                      >
-                        <RotateCw className="h-5 w-5" />
-                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                          Restart
-                        </span>
-                      </button>
-                      
-                      <button 
-                        onClick={toggleFullscreen} 
-                        className="text-white hover:text-primary focus:outline-none group relative"
+                        onClick={toggleFullscreen}
+                        className="text-white hover:text-primary focus:outline-none"
                       >
                         <Maximize className="h-5 w-5" />
-                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                          Fullscreen
-                        </span>
                       </button>
                     </div>
                   </div>
@@ -688,199 +796,78 @@ export default function DirectM3U8Extractor() {
               </div>
             </TabsContent>
             
-            {/* Encrypted Stream Tab */}
+            {/* Encrypted Stream URL Tab */}
             <TabsContent value="encrypted" className="mt-0">
-              <div className="space-y-6">
-                <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-800 mb-3">Secure Encrypted Stream</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Generate an encrypted stream URL that can be shared securely. The encrypted URL will work in the embedded player without exposing the actual stream source.
-                  </p>
+              <div className="aspect-video bg-black relative">
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+                  <h3 className="text-white text-xl font-semibold mb-6">Share Encrypted Stream</h3>
                   
-                  {encryptedUrl ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-gray-700">Your Encrypted URL:</h4>
+                  <div className="w-full max-w-xl space-y-6">
+                    <div className="space-y-2">
+                      <p className="text-gray-300 text-sm">
+                        Generate an encrypted URL that can be shared with others. The URL contains the stream data without exposing the actual M3U8 URL.
+                      </p>
+                      
+                      <div className="flex justify-center">
                         <Button
-                          onClick={() => {
-                            if (encryptedUrl) copyToClipboard(encryptedUrl);
-                          }}
-                          variant="ghost"
-                          size="sm"
-                          className={`text-sm flex items-center ${isCopied ? 'text-green-600' : 'text-gray-700'}`}
+                          onClick={generateEncryptedUrl}
+                          className="bg-primary hover:bg-blue-600 text-white"
                         >
-                          {isCopied ? (
-                            <>
-                              <Check className="h-4 w-4 mr-1" />
-                              <span>Copied!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Clipboard className="h-4 w-4 mr-1" />
-                              <span>Copy URL</span>
-                            </>
-                          )}
+                          Generate Encrypted URL
                         </Button>
                       </div>
-                      
-                      <div className="bg-white p-3 rounded-md border border-gray-200 break-all">
-                        <code className="text-sm font-mono text-gray-800 blur-permanent select-none">{encryptedUrl}</code>
-                      </div>
-                      
-                      {/* Encrypted Stream Preview Player */}
-                      <div className="mt-6 border border-gray-200 rounded-lg overflow-hidden">
-                        <h4 className="font-medium text-gray-700 p-3 bg-gray-50 border-b border-gray-200">
-                          Secure Player Preview
-                        </h4>
-                        <div className="aspect-video bg-black relative">
-                          <iframe 
-                            src={`/secure-player?token=${encryptedUrl.split('token=')[1] || ''}`}
-                            className="w-full h-full"
-                            allow="autoplay; encrypted-media; picture-in-picture"
-                            allowFullScreen
-                          ></iframe>
-                        </div>
-                        <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
-                          <div className="flex items-center">
-                            <span className="inline-flex h-2 w-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                            <span className="text-sm text-gray-600">Stream source protected</span>
-                          </div>
-                          <div className="space-x-2 flex">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-xs"
-                              onClick={() => navigator.clipboard.writeText(encryptedUrl)}
-                            >
-                              <Clipboard className="h-4 w-4 mr-1" />
-                              Copy Link
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-xs"
-                              onClick={() => window.open(encryptedUrl, '_blank')}
-                            >
-                              <ExternalLink className="h-4 w-4 mr-1" />
-                              Open in New Tab
-                            </Button>
+                    </div>
+                    
+                    {encryptedUrl && (
+                      <div className="space-y-3 bg-gray-900/50 p-4 rounded-md">
+                        <div className="space-y-1">
+                          <p className="text-gray-300 text-sm mb-1">Encrypted Stream URL:</p>
+                          <div className="bg-black/40 p-3 rounded overflow-auto text-sm font-mono text-gray-200 max-h-20">
+                            {encryptedUrl}
                           </div>
                         </div>
+                        
+                        <div className="flex space-x-2">
+                          <Button
+                            onClick={() => copyToClipboard(encryptedUrl)}
+                            className="bg-gray-700 hover:bg-gray-600 text-white flex-1"
+                          >
+                            {isCopied ? (
+                              <>
+                                <Check className="h-4 w-4 mr-2" /> Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Clipboard className="h-4 w-4 mr-2" /> Copy URL
+                              </>
+                            )}
+                          </Button>
+                          
+                          <Button 
+                            asChild
+                            className="bg-gray-700 hover:bg-gray-600 text-white flex-1"
+                          >
+                            <a href={encryptedUrl} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-4 w-4 mr-2" /> Open Player
+                            </a>
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <Button 
-                      onClick={generateEncryptedUrl}
-                      className="w-full bg-primary hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-md transition duration-200"
-                    >
-                      Generate Encrypted Stream URL
-                    </Button>
-                  )}
-                </div>
-                
-                <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-800 mb-3">Admin Access</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Admin access is required to view the direct stream URL. This helps prevent unauthorized access to source streams.
-                  </p>
-                  
-                  {isAdminAuthenticated ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-gray-700">Direct Stream URL:</h4>
-                        <Button
-                          onClick={() => {
-                            if (m3u8Url) copyToClipboard(m3u8Url);
-                          }}
-                          variant="ghost"
-                          size="sm"
-                          className={`text-sm flex items-center ${isCopied ? 'text-green-600' : 'text-gray-700'}`}
-                        >
-                          {isCopied ? (
-                            <>
-                              <Check className="h-4 w-4 mr-1" />
-                              <span>Copied!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Clipboard className="h-4 w-4 mr-1" />
-                              <span>Copy URL</span>
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                      
-                      <div className="bg-white p-3 rounded-md border border-gray-200 break-all">
-                        <code className="text-sm font-mono text-gray-800 blur-permanent select-none">
-                          {m3u8Url}
-                        </code>
-                      </div>
-                      
-                      <div className="flex justify-end mt-2">
-                        <Button
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setIsAdminAuthenticated(false)}
-                          className="text-xs text-gray-600"
-                        >
-                          Logout
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {showAdminAuth ? (
-                        <form onSubmit={handleAdminAuth} className="space-y-3">
-                          <div className="space-y-2">
-                            <label htmlFor="adminPassword" className="text-sm font-medium text-gray-700">
-                              Admin Password:
-                            </label>
-                            <input
-                              id="adminPassword"
-                              type="password"
-                              value={adminPassword}
-                              onChange={(e) => setAdminPassword(e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                              placeholder="Enter admin password"
-                            />
-                            <p className="text-amber-600 text-xs mt-1">
-                              Using the ADMIN_API_KEY from environment variables
-                            </p>
-                          </div>
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => setShowAdminAuth(false)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button type="submit">
-                              Authenticate
-                            </Button>
-                          </div>
-                        </form>
-                      ) : (
-                        <Button 
-                          onClick={() => setShowAdminAuth(true)}
-                          className="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-md transition duration-200"
-                        >
-                          Authenticate as Admin
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </TabsContent>
           </Tabs>
         ) : (
-          <div className="text-center py-10 bg-gray-50 rounded-lg border border-gray-200">
-            <MonitorPlay className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-            <p className="text-gray-700 font-medium">Enter credentials in the Code Generator</p>
-            <p className="text-sm text-gray-500 mt-1 max-w-md mx-auto">
-              The stream URL will be automatically extracted and you'll be able to play it directly in this advanced player
-            </p>
+          <div className="aspect-video flex flex-col items-center justify-center p-6 bg-gray-100 rounded-lg">
+            <div className="text-center max-w-lg space-y-3">
+              <MonitorPlay className="h-12 w-12 mx-auto text-gray-400" />
+              <h3 className="text-lg font-medium text-gray-700">No stream URL available</h3>
+              <p className="text-sm text-gray-500">
+                Search for a media file using the Media Information Search section, then select a language. The player will automatically load the stream.
+              </p>
+            </div>
           </div>
         )}
       </div>
