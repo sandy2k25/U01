@@ -9,39 +9,52 @@ This project is configured for easy deployment on Vercel.
 ### Prerequisites
 
 1. Create a Vercel account at [vercel.com](https://vercel.com)
-2. Install the Vercel CLI:
-   ```
-   npm i -g vercel
-   ```
+2. Fork or push this repository to GitHub, GitLab, or Bitbucket
 
-### Deploy Steps
+### Deployment Steps
 
-1. **Connect Repository to Vercel**:
-   - Push your repository to GitHub
-   - Import the repository in the Vercel dashboard
-   - Or use the CLI: `vercel`
+1. **From the Vercel Dashboard:**
+   - Click "Add New" → "Project"
+   - Select your repository
+   - Configure project settings:
+     - Framework Preset: Other
+     - Build Command: `npm run build` 
+     - Install Command: `npm install`
+     - Output Directory: `dist/public`
 
-2. **Set Environment Variables**:
-   You'll need to set these environment variables in the Vercel dashboard:
-   - `ADMIN_API_KEY`: Your admin API key
-   - `ADMIN_BOT_TOKEN`: Your admin Telegram bot token
-   - `USER_BOT_TOKEN`: Your user Telegram bot token
-   - `DEFAULT_EXTRACTION_URL`: Your extraction API URL
+2. **Set Environment Variables:**
+   Under the "Environment Variables" section in your Vercel project settings, add:
+   
+   - `ADMIN_API_KEY`: Your admin password/key
+   - `ADMIN_BOT_TOKEN`: Your Telegram admin bot token
+   - `USER_BOT_TOKEN`: Your Telegram user bot token
+   - `DEFAULT_EXTRACTION_URL`: Your extraction service URL
+     - Default: https://oplij.koyeb.app/api/v1/getStream
 
-3. **Deploy!**:
-   - Vercel will automatically detect the configuration and deploy your app
-   - Your project will be available at `your-project.vercel.app`
+3. **Deploy!**
+   - Click "Deploy" and Vercel will build and deploy your project
+   - Your app will be available at `your-project.vercel.app`
 
-### Local Development
+### Working with Environment Variables
 
-1. Copy `.env.example` to `.env` and fill in your variables
-2. Run `npm run dev` to start the development server
-3. Open your browser to `http://localhost:5000`
+This project relies on environment variables for secure configuration. If you're experiencing issues with variables not being recognized:
 
-## Technologies Used
+1. Double-check your variable names in the Vercel dashboard
+2. Redeploy the project after setting variables
+3. Remember that environment variables are case-sensitive
 
-- React Frontend
-- Express Backend
-- Telegram Bot Integration
-- Secure Media Playback
-- Dynamic URL Processing
+### Features
+
+- Secure media credentials management
+- Telegram bot integration
+- Admin panel for configuration
+- Secure video player
+- URL extraction utilities
+
+## Local Development
+
+1. Clone the repository
+2. Create a `.env.local` file with the same variables listed above
+3. Run `npm install` to install dependencies
+4. Run `npm run dev` to start the development server
+5. Visit `http://localhost:5000` in your browser
