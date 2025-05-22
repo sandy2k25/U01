@@ -1363,7 +1363,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     <span>Auto</span>
                     <i class="fas fa-check"></i>
                   </div>
-                  <!-- Quality options will be added dynamically -->
+                  <div class="settings-option" data-quality="1080">
+                    <span>1080p</span>
+                  </div>
+                  <div class="settings-option" data-quality="720">
+                    <span>720p</span>
+                  </div>
+                  <div class="settings-option" data-quality="480">
+                    <span>480p</span>
+                  </div>
+                  <div class="settings-option" data-quality="360">
+                    <span>360p</span>
+                  </div>
+                  <!-- Additional quality options can be added dynamically -->
                   
                   <!-- Playback speed section -->
                   <h4>Playback Speed</h4>
@@ -2856,6 +2868,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       speedDropdown.classList.remove('visible');
                       
                       showToast('Playback speed: ' + speed + 'x');
+                    });
+                  });
+                  
+                  // Handle quality option selection in settings menu
+                  document.querySelectorAll('.settings-option[data-quality]').forEach(option => {
+                    option.addEventListener('click', function(e) {
+                      e.stopPropagation();
+                      const quality = this.getAttribute('data-quality');
+                      
+                      if (quality === 'auto') {
+                        // Set auto quality
+                        if (window.hls) {
+                          window.hls.currentLevel = -1;
+                          showToast('Auto quality selected');
+                        }
+                      } else {
+                        // Set specific quality
+                        const height = parseInt(quality);
+                        if (window.hls && window.hls.levels) {
+                          // Find closest matching quality
+                          let bestMatch = 0;
+                          let minDiff = 10000;
+                          
+                          window.hls.levels.forEach((level, index) => {
+                            const diff = Math.abs(level.height - height);
+                            if (diff < minDiff) {
+                              minDiff = diff;
+                              bestMatch = index;
+                            }
+                          });
+                          
+                          // Set quality
+                          window.hls.currentLevel = bestMatch;
+                          showToast(height + 'p quality selected');
+                        }
+                      }
+                      
+                      // Update active class
+                      document.querySelectorAll('.settings-option[data-quality]').forEach(opt => {
+                        opt.classList.remove('active');
+                        const icon = opt.querySelector('i');
+                        if (icon) icon.remove();
+                      });
+                      
+                      this.classList.add('active');
+                      if (!this.querySelector('i')) {
+                        const icon = document.createElement('i');
+                        icon.className = 'fas fa-check';
+                        this.appendChild(icon);
+                      }
+                      
+                      // Close settings menu
+                      const settingsMenu = document.getElementById('settingsMenu');
+                      if (settingsMenu) {
+                        settingsMenu.classList.remove('visible');
+                      }
                     });
                   });
                 }
