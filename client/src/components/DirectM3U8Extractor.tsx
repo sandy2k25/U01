@@ -438,17 +438,32 @@ export default function DirectM3U8Extractor() {
       return;
     }
     
+    // Clear any existing encrypted URL first to avoid UI glitches
+    setEncryptedUrl("");
+    
     // Simple "encryption" by encoding the URL - in a real app this would be more secure
-    const encodedUrl = btoa(m3u8Url);
-    const appUrl = window.location.origin;
-    const encryptedPlayerUrl = `${appUrl}/secure-player?token=${encodedUrl}`;
-    
-    setEncryptedUrl(encryptedPlayerUrl);
-    
-    toast({
-      title: "Encrypted URL Generated",
-      description: "The secure player URL has been generated",
-    });
+    try {
+      const encodedUrl = btoa(m3u8Url);
+      const appUrl = window.location.origin;
+      const encryptedPlayerUrl = `${appUrl}/secure-player?token=${encodedUrl}`;
+      
+      // Small delay to prevent UI flicker
+      setTimeout(() => {
+        setEncryptedUrl(encryptedPlayerUrl);
+        
+        toast({
+          title: "Encrypted URL Generated",
+          description: "The secure player URL has been generated",
+        });
+      }, 100);
+    } catch (error) {
+      console.error("Error generating encrypted URL:", error);
+      toast({
+        title: "Error Generating URL",
+        description: "Failed to generate encrypted URL",
+        variant: "destructive",
+      });
+    }
   };
   
   // Copy the URL to clipboard
