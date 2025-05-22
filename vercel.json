@@ -9,7 +9,7 @@
       }
     },
     {
-      "src": "server/index.ts",
+      "src": "api/index.ts",
       "use": "@vercel/node"
     },
     {
@@ -19,20 +19,28 @@
   ],
   "routes": [
     {
-      "src": "/secure-player(.*)",
-      "dest": "server/index.ts"
+      "src": "/secure-player",
+      "dest": "/api"
+    },
+    {
+      "src": "/secure-player/(.*)",
+      "dest": "/api"
     },
     {
       "src": "/api/(.*)",
-      "dest": "server/index.ts"
+      "dest": "/api"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/dist/public/assets/$1"
     },
     {
       "src": "/(.*\\.(js|css|png|jpg|jpeg|svg|ico|json))",
-      "dest": "/$1"
+      "dest": "/dist/public/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/dist/public/index.html"
     }
   ],
   "env": {
