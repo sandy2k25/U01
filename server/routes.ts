@@ -726,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .settings-container {
                 position: absolute;
                 bottom: 40px;
-                right: 20px;
+                right: 70px;
                 z-index: 999; /* Higher z-index to ensure it appears above other controls */
                 opacity: 0;
                 transition: opacity 0.5s ease;
@@ -831,6 +831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 transition: all 0.2s ease;
                 color: rgba(255,255,255,0.9);
                 border-left: 3px solid transparent;
+                position: relative; /* Ensure proper positioning of icons and badges */
               }
               
               .settings-feature:hover {
@@ -885,6 +886,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 font-weight: bold;
                 margin-left: auto;
                 box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+                position: absolute;
+                right: 15px;
               }
               
               .settings-feature.active i {
@@ -1045,7 +1048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .fullscreen-btn {
                 position: absolute;
                 bottom: 40px;
-                right: 70px;
+                right: 20px;
                 background: rgba(0,0,0,0.6);
                 border: none;
                 border-radius: 50%;
