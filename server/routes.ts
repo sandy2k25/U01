@@ -208,6 +208,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 font-weight: 500;
                 font-size: 16px;
                 text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+                opacity: 0;
+                transform: translateX(-20px);
+                transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+              }
+              
+              .player-title.animated {
+                opacity: 1;
+                transform: translateX(0);
+              }
+              
+              /* Audio visualization effect */
+              .audio-visualizer {
+                position: absolute;
+                bottom: 70px;
+                left: 20px;
+                height: 40px;
+                width: 120px;
+                display: flex;
+                align-items: flex-end;
+                gap: 2px;
+                z-index: 5;
+                opacity: 0;
+                transition: opacity 0.5s ease;
+              }
+              
+              .player-container:hover .audio-visualizer {
+                opacity: 0.7;
+              }
+              
+              .audio-bar {
+                width: 4px;
+                background: linear-gradient(to top, var(--primary-color), var(--highlight-color));
+                border-radius: 2px;
+                transition: height 0.1s ease;
               }
               
               .feature-buttons {
@@ -247,34 +281,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 overflow: hidden;
               }
               
+              /* Animated progress bar */
               .plyr--full-ui input[type=range] {
                 color: var(--highlight-color);
               }
               
+              .plyr__progress input[type=range] {
+                transition: all 0.3s ease;
+              }
+              
+              .plyr__progress__buffer {
+                background: linear-gradient(90deg, 
+                  rgba(139, 92, 246, 0.3) 0%, 
+                  rgba(139, 92, 246, 0.6) 50%, 
+                  rgba(139, 92, 246, 0.3) 100%);
+                background-size: 200% 100%;
+                animation: gradient-move 2s linear infinite;
+              }
+              
+              @keyframes gradient-move {
+                0% { background-position: 100% 0; }
+                100% { background-position: 0 0; }
+              }
+              
+              /* Enhanced play button with animation */
               .plyr__control--overlaid {
                 background: rgba(109, 40, 217, 0.9);
                 padding: 25px;
-                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                            box-shadow 0.3s ease,
+                            background-color 0.3s ease;
+                animation: pulse 2s infinite;
               }
               
               .plyr__control--overlaid:hover {
                 background: rgba(109, 40, 217, 1);
-                transform: scale(1.1);
-                box-shadow: 0 0 30px rgba(109, 40, 217, 0.6);
+                transform: scale(1.15) rotate(5deg);
+                box-shadow: 0 0 30px rgba(109, 40, 217, 0.7);
+                animation: none;
               }
               
+              .plyr__control--overlaid:active {
+                transform: scale(0.95);
+              }
+              
+              /* Animated controls */
+              .plyr__controls {
+                transition: all 0.3s ease;
+                opacity: 0;
+                transform: translateY(10px);
+              }
+              
+              .plyr--video:hover .plyr__controls {
+                opacity: 1;
+                transform: translateY(0);
+              }
+              
+              .plyr__controls button {
+                transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+              }
+              
+              .plyr__controls button:hover {
+                transform: scale(1.2) !important;
+              }
+              
+              .plyr__controls button:active {
+                transform: scale(0.95) !important;
+              }
+              
+              /* Control buttons animation */
               .plyr--video .plyr__control.plyr__tab-focus,
               .plyr--video .plyr__control:hover,
               .plyr--video .plyr__control[aria-expanded=true] {
                 background: var(--highlight-color);
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(109, 40, 217, 0.4);
               }
               
               .plyr__control.plyr__tab-focus {
                 box-shadow: 0 0 0 5px rgba(139, 92, 246, 0.5);
               }
               
+              /* Menu animations */
+              .plyr__menu__container {
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                transform-origin: top right;
+              }
+              
               .plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::before {
                 background: var(--highlight-color);
+              }
+              
+              .plyr__menu__container .plyr__menu__value {
+                text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+              }
+              
+              /* Volume control animations */
+              .plyr__volume {
+                transition: width 0.3s ease;
+              }
+              
+              .plyr__volume input[type=range]::-webkit-slider-thumb {
+                transition: transform 0.2s ease;
+              }
+              
+              .plyr__volume input[type=range]::-webkit-slider-thumb:hover {
+                transform: scale(1.2);
               }
               
               .loading {
@@ -522,6 +634,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 to { opacity: 1; transform: translateY(0); }
               }
               
+              /* Interactive ripple effect */
+              @keyframes ripple {
+                0% { transform: scale(0); opacity: 1; }
+                100% { transform: scale(3); opacity: 0; }
+              }
+              
+              .ripple {
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(139, 92, 246, 0.4);
+                transform: scale(0);
+                animation: ripple 1s ease-out;
+                pointer-events: none;
+              }
+              
+              /* Play/Pause transition effect */
+              @keyframes playPauseWave {
+                0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.3); }
+                100% { box-shadow: 0 0 0 20px rgba(255, 255, 255, 0); }
+              }
+              
+              /* Animated premium badge */
               .premium-tag {
                 position: absolute;
                 top: 20px;
@@ -535,6 +669,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 box-shadow: 0 2px 8px rgba(255, 94, 98, 0.5);
                 z-index: 6;
                 animation: pulse 2s infinite;
+                backdrop-filter: blur(4px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                transform-origin: left center;
+              }
+              
+              .premium-tag:hover {
+                animation: pulse 1s infinite, wiggle 1s ease-in-out;
+                transform: scale(1.05);
+              }
+              
+              @keyframes wiggle {
+                0%, 100% { transform: rotate(0); }
+                25% { transform: rotate(5deg) scale(1.05); }
+                75% { transform: rotate(-5deg) scale(1.05); }
               }
               
               .cinema-mode-overlay {
@@ -564,6 +712,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             <div class="cinema-mode-overlay"></div>
             <div class="player-container">
               <div class="premium-tag">PREMIUM</div>
+              
+              <div class="audio-visualizer" id="audioVisualizer">
+                <!-- Audio bars will be added dynamically -->
+              </div>
             
               <div class="advanced-controls">
                 <div class="player-branding">
@@ -851,16 +1003,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   currentTime.textContent = \`\${current} / \${total}\`;
                 }
                 
-                // Setup event listeners
-                statsToggle.addEventListener('click', toggleStats);
-                screenshotBtn.addEventListener('click', takeScreenshot);
-                showHotkeys.addEventListener('click', () => {
+                // Add ripple effect on click
+                function createRipple(event) {
+                  const button = event.currentTarget;
+                  
+                  // Remove any existing ripples
+                  const ripples = button.getElementsByClassName("ripple");
+                  while (ripples.length > 0) {
+                    ripples[0].remove();
+                  }
+                  
+                  // Create new ripple
+                  const circle = document.createElement("span");
+                  const diameter = Math.max(button.clientWidth, button.clientHeight);
+                  
+                  circle.style.width = circle.style.height = \`\${diameter}px\`;
+                  circle.style.left = \`\${event.offsetX - diameter / 2}px\`;
+                  circle.style.top = \`\${event.offsetY - diameter / 2}px\`;
+                  circle.classList.add("ripple");
+                  
+                  button.appendChild(circle);
+                  
+                  // Auto remove after animation completes
+                  setTimeout(() => {
+                    if (circle && circle.parentNode) {
+                      circle.parentNode.removeChild(circle);
+                    }
+                  }, 1000);
+                }
+                
+                // Add play/pause wave effect
+                function addPlayPauseEffect() {
+                  // Check if player is initialized
+                  if (!player || !player.elements) return;
+                  
+                  const playButton = player.elements.container.querySelector('.plyr__control--overlaid');
+                  if (playButton) {
+                    playButton.addEventListener('click', function() {
+                      this.style.animation = 'none';
+                      setTimeout(() => {
+                        this.style.animation = 'playPauseWave 0.8s ease-out';
+                      }, 10);
+                    });
+                  }
+                }
+                
+                // Setup event listeners with ripple effects
+                statsToggle.addEventListener('click', function(e) {
+                  createRipple(e);
+                  toggleStats();
+                });
+                
+                screenshotBtn.addEventListener('click', function(e) {
+                  createRipple(e);
+                  takeScreenshot();
+                });
+                
+                showHotkeys.addEventListener('click', function(e) {
+                  createRipple(e);
                   hotkeysPanel.classList.add('visible');
                 });
-                closeHotkeys.addEventListener('click', () => {
+                
+                closeHotkeys.addEventListener('click', function(e) {
+                  createRipple(e);
                   hotkeysPanel.classList.remove('visible');
                 });
-                cinemaMode.addEventListener('click', toggleCinemaMode);
+                
+                cinemaMode.addEventListener('click', function(e) {
+                  createRipple(e);
+                  toggleCinemaMode();
+                });
+                
+                // Audio visualization function
+                function addAudioVisualization() {
+                  const visualizer = document.getElementById('audioVisualizer');
+                  if (!visualizer || !video) return;
+                  
+                  // Create audio bars
+                  const numBars = 20;
+                  for (let i = 0; i < numBars; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'audio-bar';
+                    bar.style.height = '0px';
+                    visualizer.appendChild(bar);
+                  }
+                  
+                  const audioBars = visualizer.querySelectorAll('.audio-bar');
+                  
+                  // Function to animate bars based on video playback
+                  function animateBars() {
+                    if (!video.paused) {
+                      // Generate random heights for the bars to simulate audio visualization
+                      audioBars.forEach(bar => {
+                        const height = Math.floor(Math.random() * 35) + 5;
+                        bar.style.height = \`\${height}px\`;
+                      });
+                    }
+                    
+                    // Request next animation frame
+                    if (!player.paused) {
+                      requestAnimationFrame(animateBars);
+                    }
+                  }
+                  
+                  // Start animation when playing, stop when paused
+                  player.on('play', () => {
+                    requestAnimationFrame(animateBars);
+                  });
+                  
+                  player.on('pause', () => {
+                    // Reset bar heights when paused
+                    audioBars.forEach(bar => {
+                      bar.style.height = '3px';
+                    });
+                  });
+                }
+                
+                // Function to animate the player title
+                function animatePlayerTitle() {
+                  const playerTitle = document.querySelector('.player-title');
+                  if (playerTitle) {
+                    setTimeout(() => {
+                      playerTitle.classList.add('animated');
+                    }, 300);
+                  }
+                }
                 
                 // Global keyboard shortcuts
                 document.addEventListener('keydown', (e) => {
@@ -924,6 +1191,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     
                     // Track player time updates
                     player.on('timeupdate', updateTimeDisplay);
+                    
+                    // Add visual enhancements after player is initialized
+                    setTimeout(() => {
+                      // Add audio visualization effect
+                      addAudioVisualization();
+                      
+                      // Add play/pause wave effect
+                      addPlayPauseEffect();
+                      
+                      // Animate player title entrance
+                      animatePlayerTitle();
+                    }, 1000);
                     
                     // Quality switching for HLS
                     if (data.levels.length > 1) {
