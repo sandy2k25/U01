@@ -11,18 +11,26 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 export default function CodeGenerator() {
-  // Auto-open credentials if needed (when language is selected)
+  // Auto-open credentials and update with language selection data
   useEffect(() => {
-    const handleLanguageSelected = () => {
+    const handleLanguageSelected = (e: Event) => {
+      // Get data from custom event
+      const customEvent = e as CustomEvent;
+      const { fileId: selectedFileId, apiKey: selectedApiKey } = customEvent.detail;
+      
       // Open the credentials section
       setIsCredentialsOpen(true);
+      
+      // Directly update the state values
+      setFileId(selectedFileId);
+      setApiKey(selectedApiKey);
       
       // Force code update on language selection
       setTimeout(() => {
         // Create a synthetic form event
         const event = { preventDefault: () => {} } as React.FormEvent;
         handleUpdateCode(event);
-      }, 200);
+      }, 100);
     };
     
     document.addEventListener('language-selected', handleLanguageSelected);
