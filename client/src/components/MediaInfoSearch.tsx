@@ -80,6 +80,8 @@ export default function MediaInfoSearch() {
     const selectedLanguage = allLanguages.find(lang => lang.id === id);
     
     if (selectedLanguage && apiKey) {
+      console.log("Language selected:", selectedLanguage.title);
+      
       // Update mediaInfo
       const mediaData: MediaInfoData = {
         title: selectedLanguage.title,
@@ -94,6 +96,16 @@ export default function MediaInfoSearch() {
       const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
       
       if (fileIdInput && apiKeyInput) {
+        console.log("Found input fields, setting values directly");
+        // Set values directly
+        fileIdInput.value = selectedLanguage.file;
+        apiKeyInput.value = apiKey;
+        
+        // Trigger input events to update state
+        const inputEvent = new Event('input', { bubbles: true });
+        fileIdInput.dispatchEvent(inputEvent);
+        apiKeyInput.dispatchEvent(inputEvent);
+        
         // Create a more specific custom event with the actual data
         const languageSelectedEvent = new CustomEvent('language-selected', {
           bubbles: true,
@@ -104,13 +116,30 @@ export default function MediaInfoSearch() {
         });
         
         // Dispatch the custom event with the data
+        console.log("Dispatching language-selected event with data:", selectedLanguage.file, apiKey);
         document.dispatchEvent(languageSelectedEvent);
           
         toast({
           title: "Language selected",
           description: `${selectedLanguage.title} file ID has been transferred and code updated`,
         });
+        
+        // Force a code update via synthetic submit event
+        setTimeout(() => {
+          console.log("Forcing code update");
+          const updateCodeButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+          if (updateCodeButton) {
+            console.log("Found update button, clicking it");
+            updateCodeButton.click();
+          } else {
+            console.log("Update button not found");
+          }
+        }, 300);
+      } else {
+        console.error("Could not find input fields for fileId or apiKey");
       }
+    } else {
+      console.error("No selected language or API key available", selectedLanguage, apiKey);
     }
   };
 
@@ -398,7 +427,7 @@ export default function MediaInfoSearch() {
   };
 
   return (
-    <Card className="bg-white rounded-xl shadow-md overflow-hidden">
+    <Card className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 backdrop-blur-sm rounded-xl border border-blue-500/20 shadow-lg shadow-blue-500/20 overflow-hidden glow-card">
       {/* Search Section */}
       <section className="p-6">
         <div className="flex items-center mb-4">

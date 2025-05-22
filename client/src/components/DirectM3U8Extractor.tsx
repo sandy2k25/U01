@@ -60,23 +60,31 @@ export default function DirectM3U8Extractor() {
 
   // Automatically fetch the URL when credentials in Code Generator change
   useEffect(() => {
+    console.log("Setting up credential monitors");
+    
     const checkForCredentials = () => {
       const fileIdInput = document.getElementById("fileId") as HTMLInputElement;
       const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
+      
+      console.log("Checking for credentials:", 
+                  fileIdInput?.value ? "fileId present" : "no fileId", 
+                  apiKeyInput?.value ? "apiKey present" : "no apiKey");
       
       // Only auto-extract if both fields have non-empty values
       if (fileIdInput && apiKeyInput && 
           fileIdInput.value && fileIdInput.value.trim() !== '' &&
           apiKeyInput.value && apiKeyInput.value.trim() !== '') {
+        console.log("Both credentials present, fetching M3U8 URL");
         fetchM3U8WithCredentials(fileIdInput.value, apiKeyInput.value);
       } else if (m3u8Url) {
         // Clear any previous URL if credentials are now empty
+        console.log("Credentials not found, clearing any existing M3U8 URL");
         setM3U8Url("");
       }
     };
 
-    // Check initially - but don't auto-extract on first load
-    // We'll let the user enter values first
+    // Run an initial check to auto-load if credentials are already present
+    setTimeout(checkForCredentials, 1000);
 
     // Setup listeners to detect changes in the Code Generator fields
     const setupChangeListeners = () => {
@@ -84,8 +92,17 @@ export default function DirectM3U8Extractor() {
       const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
       
       if (fileIdInput && apiKeyInput) {
-        const handleFileIdChange = () => checkForCredentials();
-        const handleApiKeyChange = () => checkForCredentials();
+        console.log("Found input fields, setting up change listeners");
+        
+        const handleFileIdChange = () => {
+          console.log("fileId changed to:", fileIdInput.value);
+          checkForCredentials();
+        };
+        
+        const handleApiKeyChange = () => {
+          console.log("apiKey changed to:", apiKeyInput.value ? "value present" : "empty");
+          checkForCredentials();
+        };
         
         fileIdInput.addEventListener('input', handleFileIdChange);
         apiKeyInput.addEventListener('input', handleApiKeyChange);
@@ -100,10 +117,26 @@ export default function DirectM3U8Extractor() {
     };
     
     // Also listen for the language-selected event to automatically extract the M3U8 URL
-    const handleLanguageSelected = () => {
-      setTimeout(() => {
-        checkForCredentials();
-      }, 200); // Small delay to ensure fileId and apiKey are updated
+    const handleLanguageSelected = (e: Event) => {
+      console.log("Language selected event detected");
+      
+      // Extract data from event
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && customEvent.detail.fileId && customEvent.detail.apiKey) {
+        const { fileId, apiKey } = customEvent.detail;
+        console.log("Got credentials from event, fetching M3U8 directly", 
+                   fileId ? "fileId present" : "no fileId", 
+                   apiKey ? "apiKey present" : "no apiKey");
+        
+        // Directly fetch M3U8 URL with the provided credentials
+        fetchM3U8WithCredentials(fileId, apiKey);
+      } else {
+        // Fallback to checking input fields
+        setTimeout(() => {
+          console.log("Checking input fields after language selection");
+          checkForCredentials();
+        }, 300);
+      }
     };
     
     document.addEventListener('language-selected', handleLanguageSelected);
@@ -113,7 +146,7 @@ export default function DirectM3U8Extractor() {
       cleanup();
       document.removeEventListener('language-selected', handleLanguageSelected);
     };
-  }, [extractionUrl, m3u8Url]);
+  }, [extractionUrl]);
 
   // Fetch the M3U8 URL using the provided credentials
   const fetchM3U8WithCredentials = async (fileId: string, apiKey: string) => {

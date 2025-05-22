@@ -229,7 +229,7 @@ export default function CodeGenerator() {
   }, []);
 
   return (
-    <Card className="bg-white rounded-xl shadow-md overflow-hidden">
+    <Card className="bg-gradient-to-br from-purple-900/40 to-pink-900/40 backdrop-blur-sm rounded-xl border border-purple-500/20 shadow-lg shadow-purple-500/20 overflow-hidden glow-card">
       {/* Input Section with Collapsible */}
       <section className="p-6 border-b border-gray-200">
         <Collapsible 

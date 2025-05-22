@@ -2,6 +2,115 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Animated Background Effects */
+@keyframes move-stars {
+  from {
+    transform: translateY(0px);
+  }
+  to {
+    transform: translateY(-2000px);
+  }
+}
+
+@keyframes rotate-stars {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.stars-container {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-45deg);
+  overflow: hidden;
+}
+
+.stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6000px;
+  background: transparent url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAyNCIgaGVpZ2h0PSIxMDI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxnIGZpbGw9IiNGRkYiIGZpbGwtcnVsZT0iZXZlbm9kZCI+PGNpcmNsZSBjeD0iNTEyIiBjeT0iNTEyIiByPSIyIi8+PGNpcmNsZSBjeD0iMzQ0IiBjeT0iNzgwIiByPSIxIi8+PGNpcmNsZSBjeD0iNjgwIiBjeT0iMjQ0IiByPSIxIi8+PGNpcmNsZSBjeD0iODQ0IiBjeT0iNjgwIiByPSIxIi8+PGNpcmNsZSBjeD0iMTgwIiBjeT0iMzQ0IiByPSIxIi8+PC9nPjwvc3ZnPg==') repeat;
+  animation: move-stars 150s linear infinite;
+  opacity: 0.5;
+}
+
+.stars2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6000px;
+  background: transparent url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODIwIiBoZWlnaHQ9IjgyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSIjRkZGIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgY3g9IjQxMCIgY3k9IjQxMCIgcj0iMSIvPjxjaXJjbGUgY3g9IjI3NSIgY3k9IjYyNCIgcj0iMC41Ii8+PGNpcmNsZSBjeD0iNTQ0IiBjeT0iMTk1IiByPSIwLjUiLz48Y2lyY2xlIGN4PSI2NzUiIGN5PSI1NDQiIHI9IjAuNSIvPjxjaXJjbGUgY3g9IjE0NCIgY3k9IjI3NSIgcj0iMC41Ii8+PC9nPjwvc3ZnPg==') repeat;
+  animation: move-stars 100s linear infinite;
+  opacity: 0.3;
+}
+
+.stars3 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6000px;
+  background: transparent url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzIwIiBoZWlnaHQ9IjcyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSIjRkZGIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgY3g9IjM2MCIgY3k9IjM2MCIgcj0iMSIvPjxjaXJjbGUgY3g9IjI0MCIgY3k9IjU1MCIgcj0iMC44Ii8+PGNpcmNsZSBjeD0iNDgwIiBjeT0iMTcwIiByPSIwLjgiLz48Y2lyY2xlIGN4PSI1OTAiIGN5PSI0ODAiIHI9IjAuOCIvPjxjaXJjbGUgY3g9IjEyNiIgY3k9IjI0MCIgcj0iMC44Ii8+PC9nPjwvc3ZnPg==') repeat;
+  animation: move-stars 50s linear infinite;
+  opacity: 0.7;
+}
+
+/* Card glow effects */
+.glow-card {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 25px rgba(103, 66, 230, 0.2);
+  transition: all 0.3s ease;
+}
+
+.glow-card:hover {
+  box-shadow: 0 0 35px rgba(103, 66, 230, 0.4);
+  transform: translateY(-5px);
+}
+
+.glow-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(103, 66, 230, 0.1) 0%, rgba(103, 66, 230, 0) 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.glow-card:hover::before {
+  opacity: 1;
+}
+
+/* Gradient text effects */
+.gradient-text {
+  background: linear-gradient(to right, #ff4d4d, #f9cb28);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-blue-text {
+  background: linear-gradient(to right, #4d79ff, #38cffd);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-purple-text {
+  background: linear-gradient(to right, #bd4dff, #fd38d6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 /* Custom animations for player controls */
 @keyframes fadeIn {
   from { opacity: 0; }
