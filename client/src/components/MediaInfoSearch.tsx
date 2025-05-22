@@ -94,17 +94,22 @@ export default function MediaInfoSearch() {
       const apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
       
       if (fileIdInput && apiKeyInput) {
+        // Update the values immediately
         fileIdInput.value = selectedLanguage.file;
         apiKeyInput.value = apiKey;
         
-        // Trigger change events
+        // Trigger change events manually
         const event = new Event('input', { bubbles: true });
         fileIdInput.dispatchEvent(event);
         apiKeyInput.dispatchEvent(event);
         
+        // Dispatch a custom event to notify the CodeGenerator component
+        const languageSelected = new Event('language-selected', { bubbles: true });
+        document.dispatchEvent(languageSelected);
+          
         toast({
           title: "Language selected",
-          description: `${selectedLanguage.title} file ID has been transferred to the form below`,
+          description: `${selectedLanguage.title} file ID has been transferred and code updated`,
         });
       }
     }

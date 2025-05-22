@@ -11,6 +11,27 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 export default function CodeGenerator() {
+  // Track whether credentials should be shown
+  const [credentialsVisible, setCredentialsVisible] = useState(false);
+  
+  // Auto-open credentials if needed (when language is selected)
+  useEffect(() => {
+    // We use a custom event to listen for language selections
+    const handleLanguageSelected = () => {
+      setCredentialsVisible(true);
+      
+      // Automatically update code after a short delay
+      setTimeout(() => {
+        handleUpdateCode(new Event('submit') as React.FormEvent);
+      }, 200);
+    };
+    
+    document.addEventListener('language-selected', handleLanguageSelected);
+    
+    return () => {
+      document.removeEventListener('language-selected', handleLanguageSelected);
+    };
+  }, []);
   // Original code template and initial values
   const originalCode = `fetch('https://oplij.koyeb.app/api/v1/getStream',
  { method: 'POST', headers: { 'Content-Type': 'application/json' },
