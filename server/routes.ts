@@ -265,12 +265,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 object-fit: cover;
               }
               
-              /* Additional controls for new features */
+              /* Additional controls for new features - Redesigned for better layout */
               .additional-controls {
                 position: absolute;
-                top: 0;
-                right: 180px; /* Adjusted to avoid overlap with quality selector */
-                padding: 15px 0;
+                top: 60px; /* Moved down below the premium tag and other top controls */
+                right: 20px;
+                padding: 10px 0;
                 z-index: 10;
                 display: flex;
                 gap: 10px;
@@ -722,7 +722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 animation: pulse 2s infinite;
               }
               
-              /* Settings menu */
+              /* Settings menu - Redesigned for a modern look */
               .settings-container {
                 position: absolute;
                 bottom: 40px;
@@ -733,49 +733,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 pointer-events: none;
               }
               
-              .player-container:hover .settings-container {
+              .player-container.controls-visible .settings-container {
                 opacity: 1;
+                pointer-events: auto;
               }
               
               .settings-btn {
-                background: rgba(0,0,0,0.6);
+                background: rgba(31, 41, 55, 0.8);
                 border: none;
                 border-radius: 50%;
-                width: 40px;
-                height: 40px;
+                width: 44px;
+                height: 44px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-                pointer-events: auto;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                backdrop-filter: blur(4px);
+                border: 1px solid rgba(255,255,255,0.1);
               }
               
               .settings-btn:hover {
                 background: rgba(109, 40, 217, 0.8);
-                transform: scale(1.1);
+                transform: translateY(-3px);
+                box-shadow: 0 6px 18px rgba(109, 40, 217, 0.3);
               }
               
               .settings-menu {
                 position: absolute;
-                bottom: 50px;
+                bottom: 55px;
                 right: 0;
                 background: rgba(31, 41, 55, 0.95);
-                border-radius: 8px;
-                width: 220px;
-                padding: 10px 0;
+                border-radius: 12px;
+                width: 260px;
+                padding: 15px 0;
                 backdrop-filter: blur(10px);
-                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                box-shadow: 0 15px 25px rgba(0,0,0,0.4);
                 display: none;
                 transform-origin: bottom right;
-                transform: scale(0.9);
-                transition: transform 0.2s ease, opacity 0.2s ease;
+                transform: scale(0.95);
+                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
                 opacity: 0;
-                pointer-events: auto;
                 max-height: 80vh;
                 overflow-y: auto;
+                border: 1px solid rgba(255,255,255,0.1);
               }
               
               .settings-menu.visible {
@@ -786,58 +789,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               .settings-menu h4 {
                 margin: 0;
-                padding: 10px 15px;
-                font-size: 14px;
-                color: rgba(255,255,255,0.7);
+                padding: 12px 20px;
+                font-size: 15px;
+                font-weight: 600;
+                color: white;
                 border-bottom: 1px solid rgba(255,255,255,0.1);
+                letter-spacing: 0.5px;
               }
               
               .settings-option {
-                padding: 8px 15px;
+                padding: 12px 20px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 cursor: pointer;
-                transition: background-color 0.2s ease;
+                transition: background-color 0.2s ease, transform 0.2s ease;
+                color: rgba(255,255,255,0.9);
               }
               
               .settings-option:hover {
                 background: rgba(255,255,255,0.1);
+                transform: translateX(5px);
               }
               
               .settings-option.active {
                 background: rgba(139, 92, 246, 0.2);
+                color: var(--highlight-color);
               }
               
               .settings-option span {
-                font-size: 13px;
+                font-size: 14px;
               }
               
               .settings-feature {
-                padding: 8px 15px;
+                padding: 12px 20px;
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
                 cursor: pointer;
-                transition: background-color 0.2s ease;
+                transition: all 0.2s ease;
+                color: rgba(255,255,255,0.9);
+                border-left: 3px solid transparent;
               }
               
               .settings-feature:hover {
                 background: rgba(255,255,255,0.1);
+                border-left: 3px solid var(--highlight-color);
+                padding-left: 25px;
               }
               
               .settings-feature i {
-                margin-right: 10px;
-                width: 16px;
+                margin-right: 12px;
+                width: 20px;
+                height: 20px;
                 text-align: center;
+                font-size: 16px;
+                color: rgba(255,255,255,0.7);
               }
               
               .settings-feature span {
-                font-size: 13px;
+                font-size: 14px;
                 flex-grow: 1;
               }
               
               .settings-feature.active {
+                color: var(--highlight-color);
+                background: rgba(139, 92, 246, 0.1);
+                border-left: 3px solid var(--highlight-color);
+              }
+              
+              .settings-feature.active i {
                 color: var(--highlight-color);
               }
               
@@ -1015,12 +1035,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 transform: translateX(-50%) translateY(0);
               }
               
-              /* Quality selector */
+              /* Quality selector - Redesigned and repositioned */
               .quality-selector {
                 position: absolute;
-                top: 20px;
-                right: 80px; /* Moved further to the left to avoid overlap */
-                z-index: 15;
+                top: 70px; /* Moved below the premium tag */
+                right: 20px;
+                z-index: 16; /* Higher z-index to ensure visibility */
                 opacity: 0;
                 transition: opacity 0.5s ease;
                 pointer-events: none;
@@ -1035,26 +1055,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               .quality-button {
-                background: rgba(0,0,0,0.6);
+                background: rgba(0,0,0,0.7);
                 color: white;
                 border: none;
                 border-radius: 4px;
-                padding: 6px 12px;
+                padding: 8px 14px;
                 font-size: 14px;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 display: flex;
                 align-items: center;
                 gap: 6px;
+                backdrop-filter: blur(4px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
               }
               
               .quality-button:hover {
                 background: rgba(109, 40, 217, 0.8);
+                transform: translateY(-2px);
               }
               
               .quality-dropdown {
                 position: absolute;
-                top: 40px;
+                top: 45px;
                 right: 0;
                 background: rgba(31, 41, 55, 0.95);
                 border-radius: 8px;
@@ -1064,6 +1087,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 opacity: 0;
                 transform: translateY(-10px);
                 transition: all 0.2s ease;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.1);
               }
               
               .quality-dropdown.visible {
@@ -1141,19 +1166,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 </button>
               </div>
               
-              <!-- Advanced Controls -->
-              <div class="advanced-controls">
-                <div class="feature-buttons">
-                  <button class="feature-button" id="statsToggle" title="Show Stream Stats">
+              <!-- Advanced Controls with improved layout -->
+              <div class="control-panel">
+                <div class="control-panel-inner">
+                  <button class="control-panel-button" id="statsToggle" title="Show Stream Stats">
                     <i class="fas fa-chart-bar"></i>
                   </button>
-                  <button class="feature-button" id="screenshotBtn" title="Take Screenshot">
+                  <button class="control-panel-button" id="screenshotBtn" title="Take Screenshot">
                     <i class="fas fa-camera"></i>
                   </button>
-                  <button class="feature-button" id="cinemaMode" title="Cinema Mode">
+                  <button class="control-panel-button" id="cinemaMode" title="Cinema Mode">
                     <i class="fas fa-film"></i>
                   </button>
-                  <button class="feature-button" id="showHotkeys" title="Keyboard Shortcuts">
+                  <button class="control-panel-button" id="showHotkeys" title="Keyboard Shortcuts">
                     <i class="fas fa-keyboard"></i>
                   </button>
                 </div>
