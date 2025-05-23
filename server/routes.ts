@@ -2819,6 +2819,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     });
                   });
                   
+                  // Add direct event handlers for settings menu features
+                  
+                  // Picture-in-Picture button
+                  document.getElementById('featurePip').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    createRipple(e);
+                    
+                    // Check if browser supports PIP
+                    if (document.pictureInPictureEnabled || 
+                        (video.webkitSupportsPresentationMode && 
+                        typeof video.webkitSetPresentationMode === 'function')) {
+                      
+                      if (document.pictureInPictureElement) {
+                        // Exit PIP mode
+                        document.exitPictureInPicture().catch(err => {
+                          console.error('PIP error:', err);
+                        });
+                      } else {
+                        // Enter PIP mode
+                        video.requestPictureInPicture().catch(err => {
+                          console.error('PIP error:', err);
+                          showToast('PIP mode not available: ' + err.message);
+                        });
+                      }
+                    } else {
+                      showToast('Picture-in-Picture not supported in this browser');
+                    }
+                    
+                    // Close settings menu
+                    toggleSettingsMenu();
+                  });
+                  
+                  // Cast to TV button
+                  document.getElementById('featureCast').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    createRipple(e);
+                    
+                    // Check if Chrome Cast is available
+                    if (window.chrome && window.chrome.cast && window.chrome.cast.isAvailable) {
+                      try {
+                        chrome.cast.requestSession(
+                          function(session) {
+                            showToast('Connected to Chromecast');
+                            
+                            // Load the media
+                            const mediaInfo = new chrome.cast.media.MediaInfo(source, 'application/x-mpegURL');
+                            const request = new chrome.cast.media.LoadRequest(mediaInfo);
+                            
+                            session.loadMedia(request, 
+                              function() {
+                                console.log('Cast media loaded successfully');
+                              }, 
+                              function(error) {
+                                console.error('Cast media load error:', error);
+                                showToast('Failed to load media on Chromecast');
+                              }
+                            );
+                          },
+                          function(error) {
+                            console.error('Cast session request error:', error);
+                            showToast('Chromecast connection failed');
+                          }
+                        );
+                      } catch (error) {
+                        console.error('Cast error:', error);
+                        showToast('Chromecast error occurred');
+                      }
+                    } else {
+                      showToast('Chromecast requires Google Chrome browser');
+                    }
+                    
+                    // Close settings menu
+                    toggleSettingsMenu();
+                  });
+                  
+                  // Rotate Screen button
+                  document.getElementById('featureLandscape').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    createRipple(e);
+                    
+                    // Try to use Screen Orientation API if available
+                    if (screen.orientation && screen.orientation.lock) {
+                      try {
+                        if (screen.orientation.type.includes('landscape')) {
+                          // Already in landscape, unlock
+                          screen.orientation.unlock();
+                          showToast('Exited landscape mode');
+                        } else {
+                          // Lock to landscape
+                          screen.orientation.lock('landscape')
+                            .then(() => {
+                              showToast('Entered landscape mode');
+                            })
+                            .catch(err => {
+                              console.error('Screen orientation error:', err);
+                              // Fall back to fullscreen as alternative
+                              if (!document.fullscreenElement) {
+                                playerContainer.requestFullscreen().catch(e => {
+                                  console.error('Fullscreen error:', e);
+                                });
+                              }
+                            });
+                        }
+                      } catch (err) {
+                        console.error('Screen orientation error:', err);
+                        // Fall back to fullscreen toggle
+                        toggleFullscreen();
+                      }
+                    } else {
+                      // Fall back to fullscreen for browsers without orientation API
+                      toggleFullscreen();
+                    }
+                    
+                    // Close settings menu
+                    toggleSettingsMenu();
+                  });
+                  
                   // Setup progress bar
                   setupProgressBar();
                   
