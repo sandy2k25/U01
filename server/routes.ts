@@ -17,9 +17,10 @@ const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
   const apiKey = req.headers['x-api-key'];
   
   console.log("Authentication attempt with API key:", apiKey);
-  console.log("Expected API key:", API_KEY);
+  const currentApiKey = getApiKey();
+  console.log("Expected API key:", currentApiKey);
   
-  if (!apiKey || apiKey !== API_KEY) {
+  if (!apiKey || apiKey !== currentApiKey) {
     console.log("Authentication failed: Invalid API key");
     return res.status(401).json({
       success: false,
@@ -3762,7 +3763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Admin password verification attempt");
       console.log("Password received:", password);
-      console.log("Environment API_KEY:", API_KEY);
+      console.log("Environment API_KEY:", getApiKey());
       console.log("Direct env var access:", process.env.ADMIN_API_KEY);
       
       if (!password) {
@@ -3772,10 +3773,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Use the same API_KEY variable for consistency across all admin authentication
+      // Use the same API key variable for consistency across all admin authentication
       // In a real-world scenario, this should be stored securely and hashed
       // Fall back to a default password if needed
-      const adminPassword = API_KEY || "admin-key-123";
+      const adminPassword = getApiKey();
       
       console.log("Final admin password being checked against:", adminPassword);
       

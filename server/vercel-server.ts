@@ -54,11 +54,25 @@ app.use((err: any, _req: Request, res: Response, _next: any) => {
   });
 });
 
+// Helper function to adapt Express for Vercel
+const runMiddleware = (req: VercelRequest, res: VercelResponse, fn: any) => {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result: any) => {
+      if (result instanceof Error) {
+        return reject(result)
+      }
+      return resolve(result)
+    })
+  })
+}
+
 // Create a handler for Vercel serverless deployment
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  return new Promise((resolve) => {
-    app(req, res, () => {
-      resolve(undefined);
-    });
-  });
+  // Use the middleware approach for better compatibility
+  try {
+    await runMiddleware(req, res, app)
+  } catch (err) {
+    console.error('Serverless error:', err)
+    res.status(500).send('Internal Server Error')
+  }
 }
