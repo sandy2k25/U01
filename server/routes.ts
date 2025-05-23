@@ -1959,8 +1959,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         });
                       }
                       
+                      // Unlock screen orientation if supported
+                      if (screen.orientation && screen.orientation.unlock) {
+                        try {
+                          screen.orientation.unlock();
+                        } catch (err) {
+                          console.error("Error unlocking orientation:", err);
+                        }
+                      }
+                      
                       isLandscapeMode = false;
                       showToast('Exited landscape mode');
+                      
+                      // Close settings menu
+                      settingsMenu.classList.remove('visible');
                       
                     } else {
                       // Enter landscape mode
@@ -1968,6 +1980,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       landscapeButton.classList.add('active');
                       featureLandscape.classList.add('active');
                       document.body.style.overflow = 'hidden';
+                      
+                      // Try to lock screen orientation to landscape if the API is supported
+                      if (screen.orientation && screen.orientation.lock) {
+                        try {
+                          screen.orientation.lock('landscape').then(() => {
+                            console.log("Screen orientation locked to landscape");
+                          }).catch(err => {
+                            console.error("Error locking orientation:", err);
+                            // Still continue with CSS-based landscape mode
+                          });
+                        } catch (err) {
+                          console.error("Error with orientation API:", err);
+                        }
+                      }
                       
                       // Request fullscreen for better landscape experience
                       if (playerContainer.requestFullscreen) {
@@ -3037,6 +3063,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   setupCinemaMode();
                   setupScreenshot();
                   setupStats();
+                  
+                  // Setup Cast feature click handler
+                  featureCast.addEventListener('click', function(e) {
+                    if (e) createRipple(e);
+                    
+                    try {
+                      // Check if the Cast API is available
+                      if (window.chrome && window.chrome.cast && window.chrome.cast.isAvailable) {
+                        // If we already have a session, stop it
+                        if (castSession) {
+                          castSession.stop();
+                          castSession = null;
+                          castButton.classList.remove('active');
+                          featureCast.classList.remove('active');
+                          showToast('Disconnected from Chromecast');
+                        } else {
+                          // Start a new cast session
+                          chrome.cast.requestSession(
+                            function(session) {
+                              castSession = session;
+                              castButton.classList.add('active');
+                              featureCast.classList.add('active');
+                              
+                              const mediaInfo = new chrome.cast.media.MediaInfo(source, 'application/x-mpegURL');
+                              const request = new chrome.cast.media.LoadRequest(mediaInfo);
+                              
+                              castSession.loadMedia(request, 
+                                function(media) {
+                                  console.log('Cast media loaded successfully');
+                                  showToast('Connected to Chromecast');
+                                }, 
+                                function(error) {
+                                  console.error('Cast media load error:', error);
+                                  showToast('Failed to load media on Chromecast');
+                                }
+                              );
+                            },
+                            function(error) {
+                              console.error('Cast session request error:', error);
+                              showToast('Chromecast connection failed');
+                            }
+                          );
+                        }
+                      } else {
+                        showToast('Chromecast requires Google Chrome browser');
+                      }
+                    } catch (error) {
+                      console.error('Cast error:', error);
+                      showToast('Chromecast error: ' + error.message);
+                    }
+                    
+                    // Close settings menu
+                    toggleSettingsMenu();
+                  });
                   setupHotkeys();
                 }
                 
