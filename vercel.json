@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "server/index.ts",
+      "src": "server/vercel-server.ts",
       "use": "@vercel/node"
     },
     {
@@ -15,27 +15,20 @@
   ],
   "routes": [
     {
-      "src": "/secure-player(.*)",
-      "dest": "server/index.ts"
-    },
-    {
       "src": "/api/(.*)",
-      "dest": "server/index.ts"
+      "dest": "/server/vercel-server.ts"
     },
     {
-      "handle": "filesystem"
+      "src": "/secure-player",
+      "dest": "/server/vercel-server.ts"
+    },
+    {
+      "src": "/(.*\\.(js|css|ico|png|jpg|svg|json))",
+      "dest": "/dist/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/$1"
+      "dest": "/dist/index.html"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production",
-    "ADMIN_API_KEY": "@admin_api_key",
-    "ADMIN_BOT_TOKEN": "@admin_bot_token",
-    "USER_BOT_TOKEN": "@user_bot_token",
-    "DEFAULT_EXTRACTION_URL": "https://oplij.koyeb.app/api/v1/getStream",
-    "TMDB_API_KEY": "@tmdb_api_key"
-  }
+  ]
 }

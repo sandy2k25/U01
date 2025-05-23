@@ -5,7 +5,8 @@ import fetch from "node-fetch";
 import { AdminTelegramBot, UserTelegramBot } from "./telegramBot";
 
 // Simple in-memory authentication (moved to environment variable)
-const API_KEY = process.env.ADMIN_API_KEY || "admin-key-123"; // Default key for development
+// Use a getter function to ensure environment variables are always checked at runtime
+const getApiKey = () => process.env.ADMIN_API_KEY || "admin-key-123"; // Default key for development
 
 // Telegram bot instances
 let adminTelegramBot: AdminTelegramBot | null = null;
