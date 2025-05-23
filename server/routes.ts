@@ -15,13 +15,18 @@ let userTelegramBot: UserTelegramBot | null = null;
 const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
   const apiKey = req.headers['x-api-key'];
   
+  console.log("Authentication attempt with API key:", apiKey);
+  console.log("Expected API key:", API_KEY);
+  
   if (!apiKey || apiKey !== API_KEY) {
+    console.log("Authentication failed: Invalid API key");
     return res.status(401).json({
       success: false,
       error: "Unauthorized access"
     });
   }
   
+  console.log("Authentication successful");
   next();
 };
 
@@ -3763,11 +3768,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // For simplicity, we're using a hardcoded admin password
+      // Use the same API_KEY variable for consistency across all admin authentication
       // In a real-world scenario, this should be stored securely and hashed
-      const correctPassword = process.env.ADMIN_PASSWORD || "admin123";
+      console.log("Checking password against API_KEY:", API_KEY);
       
-      if (password === correctPassword) {
+      if (password === API_KEY) {
         return res.json({
           success: true,
           message: "Password verified successfully"
