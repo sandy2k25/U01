@@ -23,6 +23,9 @@
       "dest": "server/index.ts"
     },
     {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
       "dest": "/$1"
     }
@@ -32,6 +35,7 @@
     "ADMIN_API_KEY": "@admin_api_key",
     "ADMIN_BOT_TOKEN": "@admin_bot_token",
     "USER_BOT_TOKEN": "@user_bot_token",
-    "DEFAULT_EXTRACTION_URL": "https://oplij.koyeb.app/api/v1/getStream"
+    "DEFAULT_EXTRACTION_URL": "https://oplij.koyeb.app/api/v1/getStream",
+    "TMDB_API_KEY": "@tmdb_api_key"
   }
 }
