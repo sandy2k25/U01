@@ -725,8 +725,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               /* Settings menu - Redesigned for a modern look */
               .settings-container {
                 position: absolute;
-                bottom: 40px;
-                right: 70px;
+                top: 15px; /* Moved from bottom to top */
+                right: 15px; /* Adjusted right position */
                 z-index: 999; /* Higher z-index to ensure it appears above other controls */
                 opacity: 0;
                 transition: opacity 0.5s ease;
