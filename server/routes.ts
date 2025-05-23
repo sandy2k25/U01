@@ -1004,15 +1004,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .speed-dropdown {
                 position: absolute;
                 bottom: 45px;
-                left: 50%;
-                transform: translateX(-50%) scale(0.95);
+                right: 0; /* Changed from left: 50% to align with the button */
+                transform: scale(0.95); /* Removed translateX to avoid centering */
                 background: rgba(31, 41, 55, 0.95);
                 border-radius: 8px;
                 padding: 8px 0;
                 display: none;
                 opacity: 0;
                 transition: all 0.3s ease;
-                width: 100px;
+                width: 120px; /* Slightly wider for better readability */
                 max-height: 250px;
                 overflow-y: auto;
                 z-index: 100;
